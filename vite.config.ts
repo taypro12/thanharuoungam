@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    base: '/taypro12/',   // ví dụ: '/ruouthanhha/'
+    base: '/thanharuoungam/',   // ví dụ: '/ruouthanhha/'
     plugins: [react()],
     resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
     define: {
