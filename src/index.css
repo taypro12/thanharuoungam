@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #FAF9F6;
+  --panel: #FFFFFF;
+  --brand: #B48C48;
+  --brand-2: #8C6A3A;
+  --text: #2C241E;
+  --muted: #7C746E;
+  --danger: #D9534F;
+  --success: #3FB984;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+  opacity: 0.02;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(180, 140, 72, 0.1);
+}
+
+.hover-lift { transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); }
+.hover-lift:hover { transform: translateY(-8px); box-shadow: 0 20px 40px -10px rgba(44, 36, 30, 0.15); }
+
+.text-gradient {
+  background: linear-gradient(to right, var(--brand), var(--brand-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: "";
+  position: absolute; top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: rotate(45deg); transition: 0.6s;
+}
+.btn-shine:hover::after { left: 120%; }

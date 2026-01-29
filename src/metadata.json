@@ -1,0 +1,9 @@
+{
+  "name": "Rượu Ngâm Gia Truyền - Premium E-commerce",
+  "description": "A luxury e-commerce platform specializing in traditional infused wines with modern UI/UX, advanced filtering, and a seamless checkout process.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
