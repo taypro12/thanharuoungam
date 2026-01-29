@@ -1,4 +1,3 @@
-# .github/workflows/deploy.yml
 name: Deploy Vite to GitHub Pages
 
 on:
@@ -31,14 +30,14 @@ jobs:
         with:
           node-version: 18
 
-      # Nếu repo KHÔNG có package-lock.json, dùng npm install (tránh npm ci bị fail)
+      # Nếu repo chưa có package-lock.json, dùng npm install thay vì npm ci
       - name: Install dependencies
         run: npm install
 
       - name: Build Vite
         run: npm run build
 
-      # SPA fallback để BrowserRouter không trắng khi refresh route
+      # SPA fallback (BrowserRouter): tránh trắng trang khi refresh route
       - name: Create 404.html for SPA fallback
         run: cp dist/index.html dist/404.html
 
