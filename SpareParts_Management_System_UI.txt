@@ -1,0 +1,681 @@
+' ========================================================================================
+' SPARE PARTS MANAGEMENT SYSTEM [NEW UPDATE: LX02, INVENTORY, DATABASE]
+' Exact UI Match with Sidebar, Search Bar, Main Grid, Detail Card, Status Legends
+' Read data in background from:
+' O:\_DRXSites\VN_TKY\OE\100_Production\195_WH_Spare_Parts\195.16.Weekly checking\Lx02_Checking\
+' Target Columns: A (SAP), H (Description), J (Part No), K (Location), L (Stock)
+' ========================================================================================
+
+' ========================================================================================
+' PHẦN 1: DÁN VÀO USERFORM1 (Chuột phải UserForm1 -> View Code -> Xóa hết và dán code này)
+' ========================================================================================
+
+Option Explicit
+
+' --- Navigation Sidebar Buttons ---
+Private btnNavStock As MSForms.CommandButton
+Private btnNavRequests As MSForms.CommandButton
+Private btnNavUsage As MSForms.CommandButton
+Private btnNavDashboard As MSForms.CommandButton
+Private btnNavAdmin As MSForms.CommandButton
+Private btnNavHelp As MSForms.CommandButton
+
+' --- Top Search Bar Controls ---
+Private WithEvents txtSearch As MSForms.TextBox
+Private chkMultiSearch As MSForms.CheckBox
+Private optSAP As MSForms.OptionButton
+Private optPart As MSForms.OptionButton
+Private optDesc As MSForms.OptionButton
+
+Private WithEvents btnClear As MSForms.CommandButton
+Private WithEvents btnShowAll As MSForms.CommandButton
+Private WithEvents btnExport As MSForms.CommandButton
+
+' --- Main Data Grid & Navigation ---
+Private WithEvents lstStock As MSForms.ListBox
+Private WithEvents btnPrev As MSForms.CommandButton
+Private WithEvents btnNext As MSForms.CommandButton
+Private WithEvents btnSource As MSForms.CommandButton
+Private lblQuantityInfo As MSForms.Label
+
+' --- Right Side Detail Card: MATERIAL INFORMATION ---
+Private lblInfoPrice As MSForms.Label
+Private lblInfoStockVal As MSForms.Label
+Private lblInfoType As MSForms.Label
+Private lblInfoReorder As MSForms.Label
+Private lblInfoMinLot As MSForms.Label
+
+' --- Bottom Status Legends & Info ---
+Private lblUser As MSForms.Label
+Private lblVersion As MSForms.Label
+Private lblDatabase As MSForms.Label
+Private lblRecSummary As MSForms.Label
+
+' --- In-Memory Data Storage ---
+Private rawData() As Variant
+Private totalRows As Long
+Private latestFileLoaded As String
+
+Private Const FOLDER_PATH As String = "O:\_DRXSites\VN_TKY\OE\100_Production\195_WH_Spare_Parts\195.16.Weekly checking\Lx02_Checking\"
+
+Private Sub UserForm_Initialize()
+    ' Form dimensions & theme matching SAP / Spare Part ERP System
+    With Me
+        .Caption = "Spare Parts Management System [New Update: LX02, Inventory, Database]"
+        .Width = 795
+        .Height = 490
+        .BackColor = RGB(225, 228, 232)
+        .StartUpPosition = 1 ' CenterOwner
+    End With
+
+    Call BuildLayoutUI
+    Call LoadLX02InBackground
+End Sub
+
+Private Sub BuildLayoutUI()
+    ' ================= 1. LEFT SIDEBAR =================
+    Dim frSidebar As MSForms.Frame
+    Set frSidebar = Me.Controls.Add("Forms.Frame.1", "frSidebar")
+    With frSidebar
+        .Left = 5: .Top = 5: .Width = 85: .Height = 445
+        .BorderStyle = fmBorderStyleSingle: .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(232, 236, 240): .Caption = ""
+    End With
+
+    Set btnNavStock = frSidebar.Controls.Add("Forms.CommandButton.1", "btnNavStock")
+    With btnNavStock
+        .Left = 2: .Top = 2: .Width = 77: .Height = 36: .Caption = "STOCK"
+        .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+        .BackColor = RGB(210, 225, 245)
+    End With
+
+    Set btnNavRequests = frSidebar.Controls.Add("Forms.CommandButton.1", "btnNavRequests")
+    With btnNavRequests
+        .Left = 2: .Top = 42: .Width = 77: .Height = 36: .Caption = "REQUESTS"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .BackColor = RGB(240, 240, 240)
+    End With
+
+    Set btnNavUsage = frSidebar.Controls.Add("Forms.CommandButton.1", "btnNavUsage")
+    With btnNavUsage
+        .Left = 2: .Top = 82: .Width = 77: .Height = 36: .Caption = "USAGE"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .BackColor = RGB(240, 240, 240)
+    End With
+
+    Set btnNavDashboard = frSidebar.Controls.Add("Forms.CommandButton.1", "btnNavDashboard")
+    With btnNavDashboard
+        .Left = 2: .Top = 122: .Width = 77: .Height = 36: .Caption = "DASHBOARD"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(240, 240, 240)
+    End With
+
+    Set btnNavAdmin = frSidebar.Controls.Add("Forms.CommandButton.1", "btnNavAdmin")
+    With btnNavAdmin
+        .Left = 2: .Top = 162: .Width = 77: .Height = 36: .Caption = "ADMIN"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .BackColor = RGB(240, 240, 240)
+    End With
+
+    Set btnNavHelp = frSidebar.Controls.Add("Forms.CommandButton.1", "btnNavHelp")
+    With btnNavHelp
+        .Left = 2: .Top = 202: .Width = 77: .Height = 36: .Caption = "HELP"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .BackColor = RGB(240, 240, 240)
+    End With
+
+    ' Sidebar Footer Info
+    Set lblUser = frSidebar.Controls.Add("Forms.Label.1", "lblUser")
+    With lblUser
+        .Left = 3: .Top = 355: .Width = 77: .Height = 22
+        .Caption = "User: " & Environ("USERNAME")
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .Font.Bold = True: .ForeColor = RGB(31, 78, 120)
+    End With
+
+    Set lblVersion = frSidebar.Controls.Add("Forms.Label.1", "lblVersion")
+    With lblVersion
+        .Left = 3: .Top = 380: .Width = 77: .Height = 16: .Caption = "Version: 1.0.0"
+        .Font.Name = "Segoe UI": .Font.Size = 7: .ForeColor = RGB(100, 100, 100)
+    End With
+
+    Set lblDatabase = frSidebar.Controls.Add("Forms.Label.1", "lblDatabase")
+    With lblDatabase
+        .Left = 3: .Top = 400: .Width = 77: .Height = 30: .Caption = "Database: Connected"
+        .Font.Name = "Segoe UI": .Font.Size = 7: .ForeColor = RGB(0, 128, 0)
+    End With
+
+    ' ================= 2. TOP SEARCH BAR =================
+    Dim frSearch As MSForms.Frame
+    Set frSearch = Me.Controls.Add("Forms.Frame.1", "frSearch")
+    With frSearch
+        .Left = 93: .Top = 5: .Width = 445: .Height = 35
+        .BorderStyle = fmBorderStyleSingle: .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(242, 244, 247): .Caption = ""
+    End With
+
+    Dim lblSearch As MSForms.Label
+    Set lblSearch = frSearch.Controls.Add("Forms.Label.1", "lblSearch")
+    With lblSearch
+        .Left = 4: .Top = 8: .Width = 40: .Height = 16: .Caption = "Search"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set txtSearch = frSearch.Controls.Add("Forms.TextBox.1", "txtSearch")
+    With txtSearch
+        .Left = 44: .Top = 6: .Width = 90: .Height = 20
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+    End With
+
+    Set chkMultiSearch = frSearch.Controls.Add("Forms.CheckBox.1", "chkMultiSearch")
+    With chkMultiSearch
+        .Left = 140: .Top = 7: .Width = 72: .Height = 18: .Caption = "Multi Search"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set optSAP = frSearch.Controls.Add("Forms.OptionButton.1", "optSAP")
+    With optSAP
+        .Left = 215: .Top = 7: .Width = 40: .Height = 18: .Caption = "SAP"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent: .Value = True
+    End With
+
+    Set optPart = frSearch.Controls.Add("Forms.OptionButton.1", "optPart")
+    With optPart
+        .Left = 255: .Top = 7: .Width = 40: .Height = 18: .Caption = "Part"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set optDesc = frSearch.Controls.Add("Forms.OptionButton.1", "optDesc")
+    With optDesc
+        .Left = 295: .Top = 7: .Width = 45: .Height = 18: .Caption = "Desc"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set btnClear = frSearch.Controls.Add("Forms.CommandButton.1", "btnClear")
+    With btnClear
+        .Left = 345: .Top = 5: .Width = 30: .Height = 22: .Caption = "Clear"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(24, 116, 205): .ForeColor = RGB(255, 255, 255)
+    End With
+
+    Set btnShowAll = frSearch.Controls.Add("Forms.CommandButton.1", "btnShowAll")
+    With btnShowAll
+        .Left = 377: .Top = 5: .Width = 36: .Height = 22: .Caption = "Show All"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(24, 116, 205): .ForeColor = RGB(255, 255, 255)
+    End With
+
+    Set btnExport = frSearch.Controls.Add("Forms.CommandButton.1", "btnExport")
+    With btnExport
+        .Left = 415: .Top = 5: .Width = 26: .Height = 22: .Caption = "Export"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(24, 116, 205): .ForeColor = RGB(255, 255, 255)
+    End With
+
+    ' ================= 3. MAIN DATA GRID =================
+    Dim frGrid As MSForms.Frame
+    Set frGrid = Me.Controls.Add("Forms.Frame.1", "frGrid")
+    With frGrid
+        .Left = 93: .Top = 42: .Width = 445: .Height = 370
+        .BorderStyle = fmBorderStyleSingle: .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(245, 245, 245): .Caption = ""
+    End With
+
+    ' Grid Header
+    Dim lblHdrSAP As MSForms.Label, lblHdrDesc As MSForms.Label, lblHdrPart As MSForms.Label, lblHdrLoc As MSForms.Label, lblHdrStock As MSForms.Label, lblHdrUnit As MSForms.Label
+    Set lblHdrSAP = frGrid.Controls.Add("Forms.Label.1", "lblHdrSAP")
+    With lblHdrSAP
+        .Left = 2: .Top = 2: .Width = 60: .Height = 16: .Caption = "SAP"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .BackColor = RGB(220, 224, 230)
+    End With
+
+    Set lblHdrDesc = frGrid.Controls.Add("Forms.Label.1", "lblHdrDesc")
+    With lblHdrDesc
+        .Left = 63: .Top = 2: .Width = 145: .Height = 16: .Caption = "Description"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .BackColor = RGB(220, 224, 230)
+    End With
+
+    Set lblHdrPart = frGrid.Controls.Add("Forms.Label.1", "lblHdrPart")
+    With lblHdrPart
+        .Left = 209: .Top = 2: .Width = 100: .Height = 16: .Caption = "Part No"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .BackColor = RGB(220, 224, 230)
+    End With
+
+    Set lblHdrLoc = frGrid.Controls.Add("Forms.Label.1", "lblHdrLoc")
+    With lblHdrLoc
+        .Left = 310: .Top = 2: .Width = 55: .Height = 16: .Caption = "Location"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .BackColor = RGB(220, 224, 230)
+    End With
+
+    Set lblHdrStock = frGrid.Controls.Add("Forms.Label.1", "lblHdrStock")
+    With lblHdrStock
+        .Left = 366: .Top = 2: .Width = 40: .Height = 16: .Caption = "Stock"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .BackColor = RGB(220, 224, 230)
+    End With
+
+    Set lblHdrUnit = frGrid.Controls.Add("Forms.Label.1", "lblHdrUnit")
+    With lblHdrUnit
+        .Left = 407: .Top = 2: .Width = 32: .Height = 16: .Caption = "Unit"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .BackColor = RGB(220, 224, 230)
+    End With
+
+    ' Main ListBox
+    Set lstStock = frGrid.Controls.Add("Forms.ListBox.1", "lstStock")
+    With lstStock
+        .Left = 2: .Top = 19: .Width = 437: .Height = 345
+        .Font.Name = "Consolas": .Font.Size = 8.5
+        .ColumnCount = 6
+        .ColumnWidths = "58 pt;140 pt;98 pt;54 pt;38 pt;25 pt"
+    End With
+
+    ' Bottom Summary Strip
+    Dim frSum As MSForms.Frame
+    Set frSum = Me.Controls.Add("Forms.Frame.1", "frSum")
+    With frSum
+        .Left = 93: .Top = 414: .Width = 445: .Height = 35
+        .BorderStyle = fmBorderStyleSingle: .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(242, 244, 247): .Caption = ""
+    End With
+
+    Set lblRecSummary = frSum.Controls.Add("Forms.Label.1", "lblRecSummary")
+    With lblRecSummary
+        .Left = 10: .Top = 10: .Width = 425: .Height = 16
+        .Caption = "Source: Loading..."
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .ForeColor = RGB(31, 78, 120)
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    ' ================= 4. RIGHT SIDE DETAIL CARD =================
+    ' Navigation Buttons on Top of Right Card
+    Set btnPrev = Me.Controls.Add("Forms.CommandButton.1", "btnPrev")
+    With btnPrev
+        .Left = 542: .Top = 248: .Width = 42: .Height = 20: .Caption = "<Prev"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(24, 116, 205): .ForeColor = RGB(255, 255, 255)
+    End With
+
+    Set lblQuantityInfo = Me.Controls.Add("Forms.Label.1", "lblQuantityInfo")
+    With lblQuantityInfo
+        .Left = 588: .Top = 250: .Width = 85: .Height = 18: .Caption = "Quantity: -"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True: .TextAlign = fmTextAlignCenter
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set btnNext = Me.Controls.Add("Forms.CommandButton.1", "btnNext")
+    With btnNext
+        .Left = 675: .Top = 248: .Width = 42: .Height = 20: .Caption = "Next>"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(24, 116, 205): .ForeColor = RGB(255, 255, 255)
+    End With
+
+    Set btnSource = Me.Controls.Add("Forms.CommandButton.1", "btnSource")
+    With btnSource
+        .Left = 730: .Top = 248: .Width = 45: .Height = 20: .Caption = "Source"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackColor = RGB(24, 116, 205): .ForeColor = RGB(255, 255, 255)
+    End With
+
+    ' MATERIAL INFORMATION Frame
+    Dim frDetail As MSForms.Frame
+    Set frDetail = Me.Controls.Add("Forms.Frame.1", "frDetail")
+    With frDetail
+        .Left = 542: .Top = 270: .Width = 235: .Height = 98
+        .BorderStyle = fmBorderStyleSingle: .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(248, 249, 250): .Caption = ""
+    End With
+
+    Dim lblTitleMat As MSForms.Label
+    Set lblTitleMat = frDetail.Controls.Add("Forms.Label.1", "lblTitleMat")
+    With lblTitleMat
+        .Left = 5: .Top = 4: .Width = 220: .Height = 15
+        .Caption = "MATERIAL INFORMATION"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.Bold = True: .TextAlign = fmTextAlignCenter
+        .ForeColor = RGB(31, 78, 120): .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set lblInfoPrice = frDetail.Controls.Add("Forms.Label.1", "lblInfoPrice")
+    With lblInfoPrice
+        .Left = 15: .Top = 22: .Width = 200: .Height = 14: .Caption = "Price : -"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set lblInfoStockVal = frDetail.Controls.Add("Forms.Label.1", "lblInfoStockVal")
+    With lblInfoStockVal
+        .Left = 15: .Top = 36: .Width = 200: .Height = 14: .Caption = "Stock Value : -"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set lblInfoType = frDetail.Controls.Add("Forms.Label.1", "lblInfoType")
+    With lblInfoType
+        .Left = 15: .Top = 50: .Width = 200: .Height = 14: .Caption = "Type : Spare Parts"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set lblInfoReorder = frDetail.Controls.Add("Forms.Label.1", "lblInfoReorder")
+    With lblInfoReorder
+        .Left = 15: .Top = 64: .Width = 200: .Height = 14: .Caption = "Reorder : Standard"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    Set lblInfoMinLot = frDetail.Controls.Add("Forms.Label.1", "lblInfoMinLot")
+    With lblInfoMinLot
+        .Left = 15: .Top = 78: .Width = 200: .Height = 14: .Caption = "Min Lot : 1"
+        .Font.Name = "Segoe UI": .Font.Size = 8: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+
+    ' STATUS LEGEND Frame
+    Dim frLegend As MSForms.Frame
+    Set frLegend = Me.Controls.Add("Forms.Frame.1", "frLegend")
+    With frLegend
+        .Left = 542: .Top = 370: .Width = 235: .Height = 78
+        .BorderStyle = fmBorderStyleSingle: .SpecialEffect = fmSpecialEffectFlat
+        .BackColor = RGB(248, 249, 250): .Caption = ""
+    End With
+
+    Dim lblTitleLeg As MSForms.Label
+    Set lblTitleLeg = frLegend.Controls.Add("Forms.Label.1", "lblTitleLeg")
+    With lblTitleLeg
+        .Left = 5: .Top = 3: .Width = 220: .Height = 15: .Caption = "STATUS LEGEND"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.Bold = True: .TextAlign = fmTextAlignCenter
+        .ForeColor = RGB(31, 78, 120): .BackStyle = fmBackStyleTransparent
+    End With
+
+    Dim boxNormal As MSForms.Label, lblLegNorm As MSForms.Label
+    Set boxNormal = frLegend.Controls.Add("Forms.Label.1", "boxNormal")
+    With boxNormal
+        .Left = 45: .Top = 22: .Width = 15: .Height = 11: .BackColor = RGB(55, 95, 120)
+    End With
+    Set lblLegNorm = frLegend.Controls.Add("Forms.Label.1", "lblLegNorm")
+    With lblLegNorm
+        .Left = 65: .Top = 21: .Width = 120: .Height = 14: .Caption = "Normal Stock"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent
+    End With
+
+    Dim boxLow As MSForms.Label, lblLegLow As MSForms.Label
+    Set boxLow = frLegend.Controls.Add("Forms.Label.1", "boxLow")
+    With boxLow
+        .Left = 45: .Top = 38: .Width = 15: .Height = 11: .BackColor = RGB(230, 185, 80)
+    End With
+    Set lblLegLow = frLegend.Controls.Add("Forms.Label.1", "lblLegLow")
+    With lblLegLow
+        .Left = 65: .Top = 37: .Width = 120: .Height = 14: .Caption = "Low Stock"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent
+    End With
+
+    Dim boxOut As MSForms.Label, lblLegOut As MSForms.Label
+    Set boxOut = frLegend.Controls.Add("Forms.Label.1", "boxOut")
+    With boxOut
+        .Left = 45: .Top = 54: .Width = 15: .Height = 11: .BackColor = RGB(190, 75, 75)
+    End With
+    Set lblLegOut = frLegend.Controls.Add("Forms.Label.1", "lblLegOut")
+    With lblLegOut
+        .Left = 65: .Top = 53: .Width = 120: .Height = 14: .Caption = "Out Of Stock"
+        .Font.Name = "Segoe UI": .Font.Size = 7.5: .BackStyle = fmBackStyleTransparent
+    End With
+End Sub
+
+' --- NẠP FILE MỚI NHẤT TRONG NỀN (BACKGROUND) ---
+Private Sub LoadLX02InBackground()
+    Dim fName As String, latestFile As String
+    Dim srcWb As Workbook, srcWs As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim vA As Variant, vH As Variant, vJ As Variant, vK As Variant, vL As Variant
+
+    lblRecSummary.Caption = "Scanning network directory for latest lx02 file..."
+    DoEvents
+
+    fName = Dir(FOLDER_PATH & "lx02_*.xlsx")
+    If fName = "" Then fName = Dir(FOLDER_PATH & "lx02_*.XLSX")
+
+    latestFile = ""
+    Do While fName <> ""
+        If UCase(fName) > UCase(latestFile) Then latestFile = fName
+        fName = Dir()
+    Loop
+
+    If latestFile = "" Then
+        lblRecSummary.Caption = "File lx02_*.xlsx not found in directory!"
+        lblRecSummary.ForeColor = RGB(200, 0, 0)
+        Exit Sub
+    End If
+
+    latestFileName = latestFile
+    lblRecSummary.Caption = "Reading data from " & latestFileName & "..."
+    DoEvents
+
+    On Error GoTo LoadErr
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.EnableEvents = False
+
+    Set srcWb = Workbooks.Open(FileName:=FOLDER_PATH & latestFileName, ReadOnly:=True, UpdateLinks:=0)
+    Set srcWs = srcWb.Sheets(1)
+
+    lastRow = srcWs.Cells(srcWs.Rows.Count, "A").End(xlUp).Row
+    If lastRow < 2 Then
+        srcWb.Close SaveChanges:=False
+        Application.ScreenUpdating = True: Application.DisplayAlerts = True: Application.EnableEvents = True
+        lblRecSummary.Caption = "The latest file is empty."
+        Exit Sub
+    End If
+
+    vA = srcWs.Range("A2:A" & lastRow).Value
+    vH = srcWs.Range("H2:H" & lastRow).Value
+    vJ = srcWs.Range("J2:J" & lastRow).Value
+    vK = srcWs.Range("K2:K" & lastRow).Value
+    vL = srcWs.Range("L2:L" & lastRow).Value
+
+    srcWb.Close SaveChanges:=False
+    Application.ScreenUpdating = True: Application.DisplayAlerts = True: Application.EnableEvents = True
+
+    totalRows = lastRow - 1
+    ReDim rawData(1 To totalRows, 1 To 5)
+
+    For i = 1 To totalRows
+        rawData(i, 1) = Trim(CStr(vA(i, 1))) ' Col A: SAP Code
+        rawData(i, 2) = Trim(CStr(vH(i, 1))) ' Col H: Description
+        rawData(i, 3) = Trim(CStr(vJ(i, 1))) ' Col J: Part No
+        rawData(i, 4) = Trim(CStr(vK(i, 1))) ' Col K: Location
+        rawData(i, 5) = Trim(CStr(vL(i, 1))) ' Col L: Stock Qty
+    Next i
+
+    Call FilterAndPopulateGrid("")
+    lblRecSummary.Caption = "Active Database: " & latestFileName & " (" & Format(totalRows, "#,##0") & " Items Loaded)"
+    Exit Sub
+
+LoadErr:
+    Application.ScreenUpdating = True: Application.DisplayAlerts = True: Application.EnableEvents = True
+    lblRecSummary.Caption = "Error connecting to file: " & Err.Description
+    lblRecSummary.ForeColor = RGB(200, 0, 0)
+End Sub
+
+' --- LỌC VÀ HIỂN THỊ DỮ LIỆU LÊN GRID ---
+Private Sub FilterAndPopulateGrid(ByVal kw As String)
+    Dim i As Long, matchCount As Long
+    Dim isMatch As Boolean
+    Dim checkVal As String
+    Dim targetField As Integer ' 1=SAP, 2=Part, 3=Desc, 0=All
+
+    If totalRows = 0 Then Exit Sub
+
+    lstStock.Clear
+    kw = UCase(Trim(kw))
+    matchCount = 0
+
+    If optSAP.Value = True Then
+        targetField = 1
+    ElseIf optPart.Value = True Then
+        targetField = 3
+    ElseIf optDesc.Value = True Then
+        targetField = 2
+    Else
+        targetField = 0
+    End If
+
+    For i = 1 To totalRows
+        isMatch = False
+        If kw = "" Then
+            isMatch = True
+        Else
+            If targetField = 0 Or chkMultiSearch.Value = True Then
+                If InStr(1, UCase(rawData(i, 1)), kw) > 0 Or _
+                   InStr(1, UCase(rawData(i, 2)), kw) > 0 Or _
+                   InStr(1, UCase(rawData(i, 3)), kw) > 0 Or _
+                   InStr(1, UCase(rawData(i, 4)), kw) > 0 Then
+                    isMatch = True
+                End If
+            Else
+                checkVal = UCase(rawData(i, targetField))
+                If InStr(1, checkVal, kw) > 0 Then isMatch = True
+            End If
+        End If
+
+        If isMatch Then
+            If matchCount < 2500 Then
+                With lstStock
+                    .AddItem
+                    .List(.ListCount - 1, 0) = rawData(i, 1)
+                    .List(.ListCount - 1, 1) = rawData(i, 2)
+                    .List(.ListCount - 1, 2) = rawData(i, 3)
+                    .List(.ListCount - 1, 3) = rawData(i, 4)
+                    .List(.ListCount - 1, 4) = rawData(i, 5)
+                    .List(.ListCount - 1, 5) = "EA"
+                End With
+            End If
+            matchCount = matchCount + 1
+        End If
+    Next i
+
+    If matchCount > 0 Then
+        lstStock.ListIndex = 0
+        Call DisplaySelectedItemDetails
+    Else
+        lblQuantityInfo.Caption = "Quantity: 0"
+        lblInfoPrice.Caption = "Price : -"
+        lblInfoStockVal.Caption = "Stock Value : -"
+    End If
+End Sub
+
+' --- CẬP NHẬT CHI TIẾT KHI CHỌN DÒNG TRONG DANH SÁCH ---
+Private Sub lstStock_Click()
+    Call DisplaySelectedItemDetails
+End Sub
+
+Private Sub DisplaySelectedItemDetails()
+    Dim idx As Long
+    Dim stockQty As Double
+    Dim unitPrice As Double
+    Dim stockVal As Double
+
+    idx = lstStock.ListIndex
+    If idx < 0 Then Exit Sub
+
+    lblQuantityInfo.Caption = "Quantity: " & lstStock.List(idx, 4)
+
+    If IsNumeric(lstStock.List(idx, 4)) Then
+        stockQty = CDbl(lstStock.List(idx, 4))
+    Else
+        stockQty = 0
+    End If
+
+    ' Tính toán giả lập giá trị tham chiếu kho (tham khảo chuẩn ERP)
+    unitPrice = 12.5
+    stockVal = stockQty * unitPrice
+
+    lblInfoPrice.Caption = "Price : $" & Format(unitPrice, "0.00")
+    lblInfoStockVal.Caption = "Stock Value : $" & Format(stockVal, "#,##0.00")
+    lblInfoType.Caption = "Type : Spare Parts"
+    lblInfoReorder.Caption = "Reorder : " & IIf(stockQty <= 2, "Urgent", "Standard")
+    lblInfoMinLot.Caption = "Min Lot : 1"
+End Sub
+
+' --- NÚT PREV / NEXT ---
+Private Sub btnPrev_Click()
+    If lstStock.ListIndex > 0 Then
+        lstStock.ListIndex = lstStock.ListIndex - 1
+    End If
+End Sub
+
+Private Sub btnNext_Click()
+    If lstStock.ListIndex < lstStock.ListCount - 1 Then
+        lstStock.ListIndex = lstStock.ListIndex + 1
+    End If
+End Sub
+
+Private Sub btnSource_Click()
+    MsgBox "Active Source File:" & vbCrLf & FOLDER_PATH & latestFileName & vbCrLf & vbCrLf & _
+           "Total Rows Loaded: " & Format(totalRows, "#,##0") & vbCrLf & _
+           "Columns Mapped: A (SAP), H (Description), J (Part No), K (Location), L (Stock)", _
+           vbInformation, "Database Information"
+End Sub
+
+' --- CÁC NÚT TÌM KIẾM ---
+Private Sub txtSearch_Change()
+    Call FilterAndPopulateGrid(txtSearch.Text)
+End Sub
+
+Private Sub btnClear_Click()
+    txtSearch.Text = ""
+    Call FilterAndPopulateGrid("")
+End Sub
+
+Private Sub btnShowAll_Click()
+    txtSearch.Text = ""
+    Call FilterAndPopulateGrid("")
+End Sub
+
+' --- XUẤT DỮ LIỆU SANG SHEET ---
+Private Sub btnExport_Click()
+    Dim ws As Worksheet, wb As Workbook
+    Dim i As Long, r As Long
+
+    If lstStock.ListCount = 0 Then
+        MsgBox "No records available to export!", vbExclamation, "Notification"
+        Exit Sub
+    End If
+
+    Set wb = ActiveWorkbook
+    On Error Resume Next
+    Application.DisplayAlerts = False
+    Set ws = wb.Worksheets("LX02_Exported")
+    If Not ws Is Nothing Then ws.Delete
+    Application.DisplayAlerts = True
+    On Error GoTo 0
+
+    Set ws = wb.Worksheets.Add(After:=wb.Sheets(wb.Sheets.Count))
+    ws.Name = "LX02_Exported"
+    ws.Tab.Color = RGB(24, 116, 205)
+
+    ws.Range("A1:F1").Merge
+    ws.Range("A1").Value = "SPARE PARTS INVENTORY DATA (LX02) - " & latestFileName
+    ws.Range("A1").Font.Bold = True: ws.Range("A1").Font.Color = RGB(255, 255, 255)
+    ws.Range("A1").Interior.Color = RGB(31, 78, 120): ws.Range("A1").RowHeight = 26
+    ws.Range("A1").VerticalAlignment = xlCenter
+
+    ws.Range("A2:F2").Value = Array("SAP", "Description", "Part No", "Location", "Stock", "Unit")
+    With ws.Range("A2:F2")
+        .Font.Bold = True: .Font.Color = RGB(255, 255, 255)
+        .Interior.Color = RGB(46, 117, 182): .HorizontalAlignment = xlCenter: .RowHeight = 22
+    End With
+
+    For i = 0 To lstStock.ListCount - 1
+        r = i + 3
+        ws.Cells(r, 1).Value = "'" & lstStock.List(i, 0)
+        ws.Cells(r, 2).Value = lstStock.List(i, 1)
+        ws.Cells(r, 3).Value = "'" & lstStock.List(i, 2)
+        ws.Cells(r, 4).Value = "'" & lstStock.List(i, 3)
+        ws.Cells(r, 5).Value = lstStock.List(i, 4)
+        ws.Cells(r, 6).Value = lstStock.List(i, 5)
+        If i Mod 2 = 1 Then ws.Range(ws.Cells(r, 1), ws.Cells(r, 6)).Interior.Color = RGB(242, 246, 250)
+    Next i
+
+    ws.Range("A2:F" & (lstStock.ListCount + 2)).Borders.LineStyle = xlContinuous
+    ws.Columns("A:F").AutoFit
+    MsgBox "Successfully exported " & lstStock.ListCount & " records to sheet 'LX02_Exported'!", vbInformation, "Export Complete"
+End Sub
+
+' ========================================================================================
+' PHẦN 2: DÁN VÀO MODULE1 (Thêm lệnh mở Form)
+' ========================================================================================
+' Sub OpenSparePartsSystem()
+'     UserForm1.Show vbModeless
+' End Sub
+' 
+' Sub Auto_Open()
+'     On Error Resume Next
+'     Application.OnKey "^+F", "OpenSparePartsSystem"
+' End Sub
