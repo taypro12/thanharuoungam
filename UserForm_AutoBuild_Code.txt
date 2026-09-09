@@ -1,0 +1,359 @@
+Option Explicit
+
+' ========================================================================================
+' TỰ ĐỘNG KHỞI TẠO TOÀN BỘ GIAO DIỆN VÀ ĐIỀU KHIỂN (KHÔNG CẦN KÉO THẢ THỦ CÔNG)
+' ========================================================================================
+
+' Khai báo các đối tượng có bắt sự kiện (Events)
+Private WithEvents btnSearch As MSForms.CommandButton
+Private WithEvents btnGoTo As MSForms.CommandButton
+Private WithEvents btnExport As MSForms.CommandButton
+Private WithEvents btnClose As MSForms.CommandButton
+Private WithEvents lstResults As MSForms.ListBox
+Private WithEvents txtKeyword As MSForms.TextBox
+
+' Khai báo các điều khiển nhập liệu và hiển thị
+Private cboSheets As MSForms.ComboBox
+Private chkExactMatch As MSForms.CheckBox
+Private chkMatchCase As MSForms.CheckBox
+Private lblStatus As MSForms.Label
+Private lblCount As MSForms.Label
+Private lblHeader As MSForms.Label
+
+Private Sub UserForm_Initialize()
+    Dim ws As Worksheet
+    
+    ' 1. Cấu hình Form chính
+    With Me
+        .Caption = "CÔNG CỤ TÌM KIẾM DỮ LIỆU THÔNG MINH - SMART SEARCH"
+        .Width = 560
+        .Height = 440
+        .BackColor = RGB(245, 247, 250)
+        .StartUpPosition = 1 ' CenterOwner
+    End With
+    
+    ' 2. Banner tiêu đề trang trí
+    Set lblHeader = Me.Controls.Add("Forms.Label.1", "lblHeader")
+    With lblHeader
+        .Left = 0: .Top = 0: .Width = Me.Width: .Height = 35
+        .Caption = "   HỆ THỐNG TÌM KIẾM DỮ LIỆU TOÀN DIỆN TRÊN WORKBOOK"
+        .BackColor = RGB(31, 78, 120)
+        .ForeColor = RGB(255, 255, 255)
+        .Font.Name = "Segoe UI"
+        .Font.Bold = True
+        .Font.Size = 11
+    End With
+    
+    ' 3. Nhãn & Hộp nhập từ khóa
+    Dim lbl1 As MSForms.Label
+    Set lbl1 = Me.Controls.Add("Forms.Label.1", "lbl1")
+    With lbl1
+        .Left = 15: .Top = 45: .Width = 85: .Height = 18
+        .Caption = "Từ khóa cần tìm:"
+        .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set txtKeyword = Me.Controls.Add("Forms.TextBox.1", "txtKeyword")
+    With txtKeyword
+        .Left = 105: .Top = 43: .Width = 260: .Height = 22
+        .Font.Name = "Segoe UI": .Font.Size = 9.5
+        .BorderColor = RGB(180, 190, 200)
+    End With
+    
+    ' Nút Tìm kiếm
+    Set btnSearch = Me.Controls.Add("Forms.CommandButton.1", "btnSearch")
+    With btnSearch
+        .Left = 375: .Top = 42: .Width = 80: .Height = 24
+        .Caption = "Tìm kiếm"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 9
+        .BackColor = RGB(46, 117, 182)
+        .ForeColor = RGB(255, 255, 255)
+        .Default = True ' Nhấn Enter tự chạy
+    End With
+    
+    ' Nút Đóng
+    Set btnClose = Me.Controls.Add("Forms.CommandButton.1", "btnClose")
+    With btnClose
+        .Left = 460: .Top = 42: .Width = 75: .Height = 24
+        .Caption = "Đóng"
+        .Font.Name = "Segoe UI": .Font.Size = 9
+        .Cancel = True ' Nhấn Esc tự đóng
+    End With
+    
+    ' 4. Nhãn & Hộp chọn phạm vi Sheet
+    Dim lbl2 As MSForms.Label
+    Set lbl2 = Me.Controls.Add("Forms.Label.1", "lbl2")
+    With lbl2
+        .Left = 15: .Top = 75: .Width = 85: .Height = 18
+        .Caption = "Phạm vi quét:"
+        .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set cboSheets = Me.Controls.Add("Forms.ComboBox.1", "cboSheets")
+    With cboSheets
+        .Left = 105: .Top = 73: .Width = 260: .Height = 22
+        .Font.Name = "Segoe UI": .Font.Size = 9
+        .Style = fmStyleDropDownList
+    End With
+    
+    ' Nạp danh sách Sheet
+    cboSheets.Clear
+    cboSheets.AddItem "--- TOÀN BỘ CÁC SHEET TRONG FILE ---"
+    For Each ws In ActiveWorkbook.Worksheets
+        If ws.Visible = xlSheetVisible Then
+            cboSheets.AddItem ws.Name
+        End If
+    Next ws
+    cboSheets.ListIndex = 0
+    
+    ' 5. Tùy chọn so khớp
+    Set chkExactMatch = Me.Controls.Add("Forms.CheckBox.1", "chkExactMatch")
+    With chkExactMatch
+        .Left = 375: .Top = 72: .Width = 160: .Height = 18
+        .Caption = "Khớp chính xác 100%"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+        .BackStyle = fmBackStyleTransparent
+        .Value = False
+    End With
+    
+    Set chkMatchCase = Me.Controls.Add("Forms.CheckBox.1", "chkMatchCase")
+    With chkMatchCase
+        .Left = 375: .Top = 92: .Width = 160: .Height = 18
+        .Caption = "Phân biệt HOA / thường"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+        .BackStyle = fmBackStyleTransparent
+        .Value = False
+    End With
+    
+    ' 6. Tiêu đề danh sách & Bảng kết quả (ListBox)
+    Dim lblColHeader As MSForms.Label
+    Set lblColHeader = Me.Controls.Add("Forms.Label.1", "lblColHeader")
+    With lblColHeader
+        .Left = 15: .Top = 115: .Width = 520: .Height = 18
+        .Caption = "STT        Tên Sheet                  Vị trí ô            Nội dung ô tìm thấy                                         Loại"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 8.5
+        .ForeColor = RGB(31, 78, 120)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set lstResults = Me.Controls.Add("Forms.ListBox.1", "lstResults")
+    With lstResults
+        .Left = 15: .Top = 135: .Width = 520: .Height = 210
+        .Font.Name = "Consolas": .Font.Size = 9
+        .ColumnCount = 5
+        .ColumnWidths = "35 pt;85 pt;60 pt;240 pt;60 pt"
+    End With
+    
+    ' 7. Nhãn trạng thái & Số lượng tìm thấy
+    Set lblStatus = Me.Controls.Add("Forms.Label.1", "lblStatus")
+    With lblStatus
+        .Left = 15: .Top = 352: .Width = 320: .Height = 18
+        .Caption = "Nhấp đúp chuột vào bất kỳ dòng nào để nhảy ngay đến ô đó."
+        .Font.Name = "Segoe UI": .Font.Italic = True: .Font.Size = 8.5
+        .ForeColor = RGB(100, 100, 100)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set lblCount = Me.Controls.Add("Forms.Label.1", "lblCount")
+    With lblCount
+        .Left = 350: .Top = 352: .Width = 185: .Height = 18
+        .Caption = "Tìm thấy: 0 kết quả"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 9
+        .TextAlign = fmTextAlignRight
+        .ForeColor = RGB(31, 78, 120)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    ' 8. Các nút hành động phía dưới
+    Set btnGoTo = Me.Controls.Add("Forms.CommandButton.1", "btnGoTo")
+    With btnGoTo
+        .Left = 15: .Top = 375: .Width = 140: .Height = 25
+        .Caption = ">> Nhảy tới ô đang chọn"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 8.5
+    End With
+    
+    Set btnExport = Me.Controls.Add("Forms.CommandButton.1", "btnExport")
+    With btnExport
+        .Left = 165: .Top = 375: .Width = 140: .Height = 25
+        .Caption = "Xuất kết quả ra Sheet"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+    End With
+    
+    txtKeyword.SetFocus
+End Sub
+
+' --- SỰ KIỆN TÌM KIẾM ---
+Private Sub btnSearch_Click()
+    Dim kw As String
+    Dim wb As Workbook, ws As Worksheet
+    Dim lookAtType As XlLookAt
+    Dim matchCaseVal As Boolean
+    Dim totalFound As Long
+    
+    kw = Trim(txtKeyword.Text)
+    If kw = "" Then
+        MsgBox "Vui lòng nhập từ khóa cần tìm kiếm!", vbExclamation, "Chưa có từ khóa"
+        txtKeyword.SetFocus
+        Exit Sub
+    End If
+    
+    Set wb = ActiveWorkbook
+    If wb Is Nothing Then Exit Sub
+    
+    If chkExactMatch.Value = True Then lookAtType = xlWhole Else lookAtType = xlPart
+    matchCaseVal = chkMatchCase.Value
+    
+    lstResults.Clear
+    lblStatus.Caption = "Đang quét dữ liệu, vui lòng đợi giây lát..."
+    lblStatus.ForeColor = RGB(0, 102, 204)
+    DoEvents
+    
+    totalFound = 0
+    
+    If cboSheets.ListIndex = 0 Then
+        For Each ws In wb.Worksheets
+            If ws.Visible = xlSheetVisible Then
+                Call ScanSheetData(ws, kw, lookAtType, matchCaseVal, totalFound)
+            End If
+        Next ws
+    Else
+        On Error Resume Next
+        Set ws = wb.Worksheets(cboSheets.Value)
+        On Error GoTo 0
+        If Not ws Is Nothing Then Call ScanSheetData(ws, kw, lookAtType, matchCaseVal, totalFound)
+    End If
+    
+    If totalFound = 0 Then
+        lblStatus.Caption = "Không tìm thấy dữ liệu nào phù hợp!"
+        lblStatus.ForeColor = RGB(204, 0, 0)
+        lblCount.Caption = "Tìm thấy: 0 kết quả"
+        MsgBox "Không tìm thấy ô nào chứa: """ & kw & """", vbInformation, "Kết quả"
+    Else
+        lblStatus.Caption = "Nhấp đúp chuột vào kết quả để di chuyển tới ô."
+        lblStatus.ForeColor = RGB(0, 128, 0)
+        lblCount.Caption = "Tìm thấy: " & totalFound & " kết quả"
+    End If
+End Sub
+
+Private Sub ScanSheetData(ByRef ws As Worksheet, ByVal kw As String, _
+                          ByVal lookVal As XlLookAt, ByVal bMatchCase As Boolean, _
+                          ByRef totalFound As Long)
+    Dim c As Range, firstAddr As String
+    
+    On Error Resume Next
+    Set c = ws.Cells.Find(What:=kw, LookIn:=xlValues, LookAt:=lookVal, _
+                          SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=bMatchCase)
+    On Error GoTo 0
+    
+    If Not c Is Nothing Then
+        firstAddr = c.Address
+        Do
+            If totalFound >= 1000 Then Exit Do
+            totalFound = totalFound + 1
+            
+            With lstResults
+                .AddItem
+                .List(.ListCount - 1, 0) = totalFound
+                .List(.ListCount - 1, 1) = ws.Name
+                .List(.ListCount - 1, 2) = c.Address(False, False)
+                .List(.ListCount - 1, 3) = Left(Trim(CStr(c.Text)), 100)
+                If c.HasFormula Then
+                    .List(.ListCount - 1, 4) = "Công thức"
+                Else
+                    .List(.ListCount - 1, 4) = "Giá trị"
+                End If
+            End With
+            
+            Set c = ws.Cells.FindNext(c)
+            If c Is Nothing Then Exit Do
+        Loop While c.Address <> firstAddr
+    End If
+End Sub
+
+' --- SỰ KIỆN NHẢY TỚI Ô (DOUBLE CLICK HOẶC BẤM NÚT) ---
+Private Sub lstResults_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
+    Call JumpToCell
+End Sub
+
+Private Sub btnGoTo_Click()
+    Call JumpToCell
+End Sub
+
+Private Sub JumpToCell()
+    Dim idx As Long, shName As String, addr As String
+    Dim ws As Worksheet, c As Range
+    
+    idx = lstResults.ListIndex
+    If idx < 0 Then
+        MsgBox "Vui lòng chọn một dòng kết quả trước!", vbExclamation, "Chưa chọn"
+        Exit Sub
+    End If
+    
+    shName = lstResults.List(idx, 1)
+    addr = lstResults.List(idx, 2)
+    
+    On Error Resume Next
+    Set ws = ActiveWorkbook.Worksheets(shName)
+    If Not ws Is Nothing Then
+        ws.Activate
+        Set c = ws.Range(addr)
+        c.Select
+        ActiveWindow.ScrollRow = Application.WorksheetFunction.Max(1, c.Row - 4)
+        ActiveWindow.ScrollColumn = Application.WorksheetFunction.Max(1, c.Column - 2)
+    End If
+    On Error GoTo 0
+End Sub
+
+' --- XUẤT KẾT QUẢ RA SHEET ---
+Private Sub btnExport_Click()
+    Dim outWs As Worksheet, i As Long, r As Long, wb As Workbook
+    If lstResults.ListCount = 0 Then
+        MsgBox "Không có dữ liệu kết quả để xuất!", vbExclamation, "Thông báo"
+        Exit Sub
+    End If
+    
+    Set wb = ActiveWorkbook
+    On Error Resume Next
+    Application.DisplayAlerts = False
+    Set outWs = wb.Worksheets("KQ_TimKiem")
+    If Not outWs Is Nothing Then outWs.Delete
+    Application.DisplayAlerts = True
+    On Error GoTo 0
+    
+    Set outWs = wb.Worksheets.Add(After:=wb.Sheets(wb.Sheets.Count))
+    outWs.Name = "KQ_TimKiem"
+    outWs.Tab.Color = RGB(0, 112, 192)
+    
+    outWs.Range("A1:E1").Merge
+    outWs.Range("A1").Value = "KẾT QUẢ TÌM KIẾM TỪ KHÓA: """ & UCase(txtKeyword.Text) & """"
+    outWs.Range("A1").Font.Bold = True: .Range("A1").Font.Color = RGB(255, 255, 255)
+    outWs.Range("A1").Interior.Color = RGB(31, 78, 120): .Range("A1").RowHeight = 25
+    outWs.Range("A1").VerticalAlignment = xlCenter
+    
+    outWs.Range("A2:E2").Value = Array("STT", "Tên Sheet", "Tọa độ ô", "Nội dung tìm thấy", "Truy cập nhanh")
+    With outWs.Range("A2:E2")
+        .Font.Bold = True: .Font.Color = RGB(255, 255, 255)
+        .Interior.Color = RGB(46, 117, 182): .HorizontalAlignment = xlCenter: .RowHeight = 22
+    End With
+    
+    For i = 0 To lstResults.ListCount - 1
+        r = i + 3
+        outWs.Cells(r, 1).Value = lstResults.List(i, 0)
+        outWs.Cells(r, 2).Value = lstResults.List(i, 1)
+        outWs.Cells(r, 3).Value = lstResults.List(i, 2)
+        outWs.Cells(r, 4).Value = lstResults.List(i, 3)
+        outWs.Hyperlinks.Add Anchor:=outWs.Cells(r, 5), Address:="", _
+                             SubAddress:="'" & lstResults.List(i, 1) & "'!" & lstResults.List(i, 2), _
+                             TextToDisplay:=">> Nhảy tới ô " & lstResults.List(i, 2)
+    Next i
+    
+    outWs.Range("A2:E" & (lstResults.ListCount + 2)).Borders.LineStyle = xlContinuous
+    outWs.Columns("A:E").AutoFit
+    MsgBox "Đã xuất xong " & lstResults.ListCount & " kết quả sang sheet 'KQ_TimKiem'!", vbInformation, "Thành công"
+End Sub
+
+Private Sub btnClose_Click()
+    Unload Me
+End Sub
