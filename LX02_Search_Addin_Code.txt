@@ -1,0 +1,416 @@
+' ========================================================================================
+' ADVANCED DATA SEARCH TOOL - AUTO DATA LOADER (ENGLISH INTERFACE)
+' Folder Path: O:\_DRXSites\VN_TKY\OE\100_Production\195_WH_Spare_Parts\195.16.Weekly checking\Lx02_Checking\
+' Target Columns: A, H, J, K, L
+' Shortcut: Ctrl + Shift + F
+' ========================================================================================
+
+' ========================================================================================
+' PHẦN 1: DÁN VÀO USERFORM (Chuột phải UserForm1 -> View Code -> Dán toàn bộ đoạn này)
+' ========================================================================================
+
+Option Explicit
+
+Private WithEvents btnSearch As MSForms.CommandButton
+Private WithEvents btnReload As MSForms.CommandButton
+Private WithEvents btnExport As MSForms.CommandButton
+Private WithEvents btnClose As MSForms.CommandButton
+Private WithEvents lstResults As MSForms.ListBox
+Private WithEvents txtKeyword As MSForms.TextBox
+
+Private cboSearchIn As MSForms.ComboBox
+Private chkExactMatch As MSForms.CheckBox
+Private lblStatus As MSForms.Label
+Private lblCount As MSForms.Label
+Private lblHeader As MSForms.Label
+Private lblFileInfo As MSForms.Label
+
+Private allData() As Variant
+Private totalRecords As Long
+Private latestFileName As String
+
+Private Const FOLDER_PATH As String = "O:\_DRXSites\VN_TKY\OE\100_Production\195_WH_Spare_Parts\195.16.Weekly checking\Lx02_Checking\"
+
+Private Sub UserForm_Initialize()
+    With Me
+        .Caption = "LX02 CHECKING DATA SEARCH TOOL"
+        .Width = 630
+        .Height = 475
+        .BackColor = RGB(245, 247, 250)
+        .StartUpPosition = 1
+    End With
+    
+    Set lblHeader = Me.Controls.Add("Forms.Label.1", "lblHeader")
+    With lblHeader
+        .Left = 0: .Top = 0: .Width = Me.Width: .Height = 35
+        .Caption = "   SPARE PARTS INVENTORY DATA LOOKUP (LX02)"
+        .BackColor = RGB(31, 78, 120)
+        .ForeColor = RGB(255, 255, 255)
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 11
+    End With
+    
+    Set lblFileInfo = Me.Controls.Add("Forms.Label.1", "lblFileInfo")
+    With lblFileInfo
+        .Left = 15: .Top = 40: .Width = 580: .Height = 16
+        .Caption = "Source: Loading latest file..."
+        .Font.Name = "Segoe UI": .Font.Size = 8.5: .Font.Italic = True
+        .ForeColor = RGB(80, 80, 80)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Dim lblKw As MSForms.Label
+    Set lblKw = Me.Controls.Add("Forms.Label.1", "lblKw")
+    With lblKw
+        .Left = 15: .Top = 65: .Width = 90: .Height = 18
+        .Caption = "Search Keyword:"
+        .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set txtKeyword = Me.Controls.Add("Forms.TextBox.1", "txtKeyword")
+    With txtKeyword
+        .Left = 110: .Top = 63: .Width = 220: .Height = 22
+        .Font.Name = "Segoe UI": .Font.Size = 9.5
+    End With
+    
+    Dim lblCol As MSForms.Label
+    Set lblCol = Me.Controls.Add("Forms.Label.1", "lblCol")
+    With lblCol
+        .Left = 340: .Top = 65: .Width = 60: .Height = 18
+        .Caption = "Search In:"
+        .Font.Name = "Segoe UI": .Font.Size = 9: .Font.Bold = True
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set cboSearchIn = Me.Controls.Add("Forms.ComboBox.1", "cboSearchIn")
+    With cboSearchIn
+        .Left = 405: .Top = 63: .Width = 190: .Height = 22
+        .Font.Name = "Segoe UI": .Font.Size = 9
+        .Style = fmStyleDropDownList
+        .Clear
+        .AddItem "All Columns (A, H, J, K, L)"
+        .AddItem "Column A (Material / Code)"
+        .AddItem "Column H"
+        .AddItem "Column J"
+        .AddItem "Column K"
+        .AddItem "Column L"
+        .ListIndex = 0
+    End With
+    
+    Set chkExactMatch = Me.Controls.Add("Forms.CheckBox.1", "chkExactMatch")
+    With chkExactMatch
+        .Left = 110: .Top = 90: .Width = 180: .Height = 18
+        .Caption = "Exact match (100% cell content)"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+        .BackStyle = fmBackStyleTransparent
+        .Value = False
+    End With
+    
+    Set btnSearch = Me.Controls.Add("Forms.CommandButton.1", "btnSearch")
+    With btnSearch
+        .Left = 405: .Top = 90: .Width = 90: .Height = 24
+        .Caption = "Search"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 9
+        .BackColor = RGB(46, 117, 182): .ForeColor = RGB(255, 255, 255)
+        .Default = True
+    End With
+    
+    Set btnReload = Me.Controls.Add("Forms.CommandButton.1", "btnReload")
+    With btnReload
+        .Left = 505: .Top = 90: .Width = 90: .Height = 24
+        .Caption = "Reload Data"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+    End With
+    
+    Dim lblHeaders As MSForms.Label
+    Set lblHeaders = Me.Controls.Add("Forms.Label.1", "lblHeaders")
+    With lblHeaders
+        .Left = 15: .Top = 118: .Width = 580: .Height = 18
+        .Caption = "No.         Col A                              Col H                  Col J                  Col K                  Col L"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 8.5
+        .ForeColor = RGB(31, 78, 120)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set lstResults = Me.Controls.Add("Forms.ListBox.1", "lstResults")
+    With lstResults
+        .Left = 15: .Top = 138: .Width = 580: .Height = 240
+        .Font.Name = "Consolas": .Font.Size = 9
+        .ColumnCount = 6
+        .ColumnWidths = "35 pt;140 pt;80 pt;80 pt;80 pt;80 pt"
+    End With
+    
+    Set lblStatus = Me.Controls.Add("Forms.Label.1", "lblStatus")
+    With lblStatus
+        .Left = 15: .Top = 385: .Width = 350: .Height = 18
+        .Caption = "Ready"
+        .Font.Name = "Segoe UI": .Font.Italic = True: .Font.Size = 8.5
+        .ForeColor = RGB(100, 100, 100)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set lblCount = Me.Controls.Add("Forms.Label.1", "lblCount")
+    With lblCount
+        .Left = 380: .Top = 385: .Width = 215: .Height = 18
+        .Caption = "Records: 0"
+        .Font.Name = "Segoe UI": .Font.Bold = True: .Font.Size = 9
+        .TextAlign = fmTextAlignRight
+        .ForeColor = RGB(31, 78, 120)
+        .BackStyle = fmBackStyleTransparent
+    End With
+    
+    Set btnExport = Me.Controls.Add("Forms.CommandButton.1", "btnExport")
+    With btnExport
+        .Left = 15: .Top = 408: .Width = 140: .Height = 25
+        .Caption = "Export to Sheet"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+    End With
+    
+    Set btnClose = Me.Controls.Add("Forms.CommandButton.1", "btnClose")
+    With btnClose
+        .Left = 495: .Top = 408: .Width = 100: .Height = 25
+        .Caption = "Close"
+        .Font.Name = "Segoe UI": .Font.Size = 8.5
+        .Cancel = True
+    End With
+    
+    Call LoadLatestFileInBackground
+End Sub
+
+Private Sub LoadLatestFileInBackground()
+    Dim fName As String, latestFile As String
+    Dim srcWb As Workbook, srcWs As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim vA As Variant, vH As Variant, vJ As Variant, vK As Variant, vL As Variant
+    
+    lblStatus.Caption = "Scanning folder for the latest file..."
+    lblStatus.ForeColor = RGB(0, 102, 204)
+    DoEvents
+    
+    fName = Dir(FOLDER_PATH & "lx02_*.xlsx")
+    If fName = "" Then fName = Dir(FOLDER_PATH & "lx02_*.XLSX")
+    
+    latestFile = ""
+    Do While fName <> ""
+        If UCase(fName) > UCase(latestFile) Then latestFile = fName
+        fName = Dir()
+    Loop
+    
+    If latestFile = "" Then
+        lblStatus.Caption = "Error: No 'lx02_*.xlsx' file found in folder!"
+        lblStatus.ForeColor = RGB(204, 0, 0)
+        lblFileInfo.Caption = "Source Folder: " & FOLDER_PATH & " (Empty)"
+        MsgBox "Cannot find any file matching 'lx02_*.xlsx' in folder:" & vbCrLf & FOLDER_PATH, vbCritical, "File Not Found"
+        Exit Sub
+    End If
+    
+    latestFileName = latestFile
+    lblFileInfo.Caption = "Latest File: " & latestFileName
+    lblStatus.Caption = "Reading data from " & latestFileName & "..."
+    DoEvents
+    
+    On Error GoTo ReadError
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.EnableEvents = False
+    
+    Set srcWb = Workbooks.Open(FileName:=FOLDER_PATH & latestFileName, ReadOnly:=True, UpdateLinks:=0)
+    Set srcWs = srcWb.Sheets(1)
+    
+    lastRow = srcWs.Cells(srcWs.Rows.Count, "A").End(xlUp).Row
+    If lastRow < 2 Then
+        srcWb.Close SaveChanges:=False
+        Application.ScreenUpdating = True
+        Application.DisplayAlerts = True
+        Application.EnableEvents = True
+        MsgBox "The file contains no data rows.", vbExclamation, "No Data"
+        Exit Sub
+    End If
+    
+    vA = srcWs.Range("A2:A" & lastRow).Value
+    vH = srcWs.Range("H2:H" & lastRow).Value
+    vJ = srcWs.Range("J2:J" & lastRow).Value
+    vK = srcWs.Range("K2:K" & lastRow).Value
+    vL = srcWs.Range("L2:L" & lastRow).Value
+    
+    srcWb.Close SaveChanges:=False
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.EnableEvents = True
+    
+    totalRecords = lastRow - 1
+    ReDim allData(1 To totalRecords, 1 To 5)
+    
+    For i = 1 To totalRecords
+        allData(i, 1) = Trim(CStr(vA(i, 1)))
+        allData(i, 2) = Trim(CStr(vH(i, 1)))
+        allData(i, 3) = Trim(CStr(vJ(i, 1)))
+        allData(i, 4) = Trim(CStr(vK(i, 1)))
+        allData(i, 5) = Trim(CStr(vL(i, 1)))
+    Next i
+    
+    Call DisplayResults("")
+    lblStatus.Caption = "Data loaded successfully (" & Format(totalRecords, "#,##0") & " rows)."
+    lblStatus.ForeColor = RGB(0, 128, 0)
+    Exit Sub
+
+ReadError:
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.EnableEvents = True
+    lblStatus.Caption = "Error loading file: " & Err.Description
+    lblStatus.ForeColor = RGB(204, 0, 0)
+    MsgBox "Failed to read file: " & Err.Description, vbCritical, "Error"
+End Sub
+
+Private Sub btnSearch_Click()
+    Dim kw As String
+    kw = Trim(txtKeyword.Text)
+    Call DisplayResults(kw)
+End Sub
+
+Private Sub DisplayResults(ByVal kw As String)
+    Dim i As Long, matchCount As Long
+    Dim isMatch As Boolean
+    Dim targetCol As Integer
+    Dim checkVal As String
+    Dim isExact As Boolean
+    
+    If totalRecords = 0 Then Exit Sub
+    
+    lstResults.Clear
+    isExact = chkExactMatch.Value
+    targetCol = cboSearchIn.ListIndex
+    kw = UCase(kw)
+    matchCount = 0
+    
+    For i = 1 To totalRecords
+        isMatch = False
+        
+        If kw = "" Then
+            isMatch = True
+        Else
+            If targetCol = 0 Then
+                If isExact Then
+                    If UCase(allData(i, 1)) = kw Or UCase(allData(i, 2)) = kw Or _
+                       UCase(allData(i, 3)) = kw Or UCase(allData(i, 4)) = kw Or _
+                       UCase(allData(i, 5)) = kw Then isMatch = True
+                Else
+                    If InStr(1, UCase(allData(i, 1)), kw) > 0 Or InStr(1, UCase(allData(i, 2)), kw) > 0 Or _
+                       InStr(1, UCase(allData(i, 3)), kw) > 0 Or InStr(1, UCase(allData(i, 4)), kw) > 0 Or _
+                       InStr(1, UCase(allData(i, 5)), kw) > 0 Then isMatch = True
+                End If
+            Else
+                checkVal = UCase(allData(i, targetCol))
+                If isExact Then
+                    If checkVal = kw Then isMatch = True
+                Else
+                    If InStr(1, checkVal, kw) > 0 Then isMatch = True
+                End If
+            End If
+        End If
+        
+        If isMatch Then
+            If matchCount < 2000 Then
+                With lstResults
+                    .AddItem
+                    .List(.ListCount - 1, 0) = matchCount + 1
+                    .List(.ListCount - 1, 1) = allData(i, 1)
+                    .List(.ListCount - 1, 2) = allData(i, 2)
+                    .List(.ListCount - 1, 3) = allData(i, 3)
+                    .List(.ListCount - 1, 4) = allData(i, 4)
+                    .List(.ListCount - 1, 5) = allData(i, 5)
+                End With
+            End If
+            matchCount = matchCount + 1
+        End If
+    Next i
+    
+    lblCount.Caption = "Found: " & Format(matchCount, "#,##0") & " record(s)"
+    If matchCount = 0 Then
+        lblStatus.Caption = "No records matched the search criteria."
+        lblStatus.ForeColor = RGB(204, 0, 0)
+    Else
+        lblStatus.Caption = "Showing up to 2,000 records."
+        lblStatus.ForeColor = RGB(0, 128, 0)
+    End If
+End Sub
+
+Private Sub btnReload_Click()
+    Call LoadLatestFileInBackground
+End Sub
+
+Private Sub btnExport_Click()
+    Dim ws As Worksheet, wb As Workbook
+    Dim i As Long, r As Long
+    
+    If lstResults.ListCount = 0 Then
+        MsgBox "No data to export!", vbExclamation, "Warning"
+        Exit Sub
+    End If
+    
+    Set wb = ActiveWorkbook
+    On Error Resume Next
+    Application.DisplayAlerts = False
+    Set ws = wb.Worksheets("LX02_Search_Results")
+    If Not ws Is Nothing Then ws.Delete
+    Application.DisplayAlerts = True
+    On Error GoTo 0
+    
+    Set ws = wb.Worksheets.Add(After:=wb.Sheets(wb.Sheets.Count))
+    ws.Name = "LX02_Search_Results"
+    ws.Tab.Color = RGB(0, 112, 192)
+    
+    ws.Range("A1:F1").Merge
+    ws.Range("A1").Value = "LX02 SEARCH RESULTS - SOURCE: " & latestFileName
+    ws.Range("A1").Font.Bold = True: ws.Range("A1").Font.Color = RGB(255, 255, 255)
+    ws.Range("A1").Interior.Color = RGB(31, 78, 120): ws.Range("A1").RowHeight = 25
+    ws.Range("A1").VerticalAlignment = xlCenter
+    
+    ws.Range("A2:F2").Value = Array("No.", "Column A", "Column H", "Column J", "Column K", "Column L")
+    With ws.Range("A2:F2")
+        .Font.Bold = True: .Font.Color = RGB(255, 255, 255)
+        .Interior.Color = RGB(46, 117, 182): .HorizontalAlignment = xlCenter: .RowHeight = 22
+    End With
+    
+    For i = 0 To lstResults.ListCount - 1
+        r = i + 3
+        ws.Cells(r, 1).Value = lstResults.List(i, 0)
+        ws.Cells(r, 2).Value = lstResults.List(i, 1)
+        ws.Cells(r, 3).Value = "'" & lstResults.List(i, 2)
+        ws.Cells(r, 4).Value = "'" & lstResults.List(i, 3)
+        ws.Cells(r, 5).Value = "'" & lstResults.List(i, 4)
+        ws.Cells(r, 6).Value = "'" & lstResults.List(i, 5)
+        
+        If i Mod 2 = 1 Then
+            ws.Range(ws.Cells(r, 1), ws.Cells(r, 6)).Interior.Color = RGB(242, 246, 250)
+        End If
+    Next i
+    
+    ws.Range("A2:F" & (lstResults.ListCount + 2)).Borders.LineStyle = xlContinuous
+    ws.Columns("A:F").AutoFit
+    MsgBox "Successfully exported " & lstResults.ListCount & " records to sheet 'LX02_Search_Results'!", vbInformation, "Success"
+End Sub
+
+Private Sub txtKeyword_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    If KeyCode = vbKeyReturn Then Call btnSearch_Click
+End Sub
+
+Private Sub btnClose_Click()
+    Unload Me
+End Sub
+
+
+' ========================================================================================
+' PHẦN 2: DÁN VÀO MODULE (Insert -> Module -> Dán đoạn này)
+' ========================================================================================
+
+Sub OpenSearchTool()
+    UserForm1.Show vbModeless
+End Sub
+
+Sub Auto_Open()
+    On Error Resume Next
+    Application.OnKey "^+F", "OpenSearchTool" ' Shortcut: Ctrl + Shift + F
+End Sub
