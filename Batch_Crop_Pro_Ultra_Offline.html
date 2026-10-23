@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Batch Crop Pro Ultra Offline</title>
+<style>
+:root{--bg:#10131a;--panel:#191e27;--panel2:#222936;--text:#eef2f8;--muted:#aab4c4;--line:#343d4c;--accent:#7c3aed;--accent2:#a855f7;--green:#10b981;--gold:#f5c451;--danger:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#0e1117,#151a24 60%,#10131a);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#11151ddd;position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#7c3aed,#c084fc);display:grid;place-items:center;font-size:22px;font-weight:900;box-shadow:0 8px 24px #7c3aed44}.brand h1{margin:0;font-size:21px;letter-spacing:-.5px}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pill{padding:6px 10px;border:1px solid var(--line);border-radius:99px;color:#cbd5e1;font-size:12px}
+main{display:grid;grid-template-columns:minmax(320px,410px) minmax(0,1fr);gap:18px;padding:18px;max-width:1700px;margin:auto}.panel{background:linear-gradient(180deg,#1b202a,#171b23);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0}.panel-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.panel-head h2{margin:0;font-size:15px}.panel-body{padding:16px}.drop{border:2px dashed #596579;background:#141923;border-radius:13px;text-align:center;padding:22px 12px;transition:.2s;cursor:pointer}.drop.drag{border-color:#a78bfa;background:#2b2140}.drop strong{display:block;font-size:15px;margin-bottom:5px}.drop small{color:var(--muted)}.drop-icon{font-size:27px;margin-bottom:6px}.file-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#252c39;color:var(--text);font-weight:650;cursor:pointer;transition:.15s}.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}.btn.primary{background:linear-gradient(110deg,#6d28d9,#9333ea);border-color:#8b5cf6}.btn.green{background:linear-gradient(110deg,#059669,#10b981);border-color:#10b981;color:white}.btn.gold{background:linear-gradient(110deg,#b7791f,#eab308);border-color:#eab308;color:#171717}.btn.danger{color:#fecdd3;border-color:#7f1d1d;background:#3a2029}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.1px;color:#a78bfa;font-weight:800;margin:19px 0 10px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field label{color:#c5cedb;font-size:12px;font-weight:650}.field input,.field select{width:100%;min-width:0;background:#111620;border:1px solid #394354;color:#eef2f8;border-radius:9px;padding:10px 9px;outline:none}.field input:focus,.field select:focus{border-color:#a78bfa;box-shadow:0 0 0 2px #8b5cf622}.field input[type=color]{height:39px;padding:4px}.field input[type=range]{padding:0;accent-color:#a78bfa}.check{display:flex;align-items:center;gap:8px;color:#d6deea;font-size:12px}.check input{accent-color:#8b5cf6}.hint{font-size:11px;color:var(--muted);margin-top:5px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:17px}.actions .wide{grid-column:1/-1}.progress-wrap{margin-top:15px}.progress-line{height:9px;border-radius:20px;background:#0d1118;overflow:hidden;border:1px solid #313a48}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#7c3aed,#a855f7,#10b981);transition:width .15s}.progress-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin:6px 0}
+.log{margin-top:14px;background:#0b1016;border:1px solid #2d3643;border-radius:10px;height:150px;overflow:auto;padding:10px;font:11px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#a7f3d0;white-space:pre-wrap}.log .warn{color:#fcd34d}.log .err{color:#fda4af}
+.rightcol{display:flex;flex-direction:column;gap:18px}.preview-panel{flex:1;min-height:470px}.preview-stage{background:radial-gradient(circle at 50% 35%,#242b38,#0d1118);min-height:440px;display:flex;align-items:center;justify-content:center;padding:18px;position:relative}.preview-stage canvas{max-width:100%;max-height:70vh;object-fit:contain;box-shadow:0 12px 45px #0008;border:1px solid #ffffff18}.empty{text-align:center;color:#78869a}.empty .big{font-size:48px}.empty p{margin:5px 0}.preview-bottom{padding:11px 15px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.queue{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;padding:14px}.thumb{border:1px solid var(--line);background:#111620;border-radius:10px;overflow:hidden;cursor:pointer;position:relative}.thumb.active{border:2px solid #a78bfa;box-shadow:0 0 0 2px #8b5cf633}.thumb img{display:block;width:100%;height:95px;object-fit:cover;background:#090c11}.thumb-info{padding:8px}.thumb-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.thumb-meta{font-size:10px;color:var(--muted);margin-top:3px}.thumb .remove{position:absolute;right:5px;top:5px;border:0;background:#111d;color:#fff;border-radius:6px;padding:3px 6px;cursor:pointer}
+footer{padding:16px;text-align:center;color:#748094;font-size:11px}
+@media(max-width:1000px){main{grid-template-columns:1fr}.preview-panel{min-height:350px}.preview-stage{min-height:320px}.preview-stage canvas{max-height:55vh}header{position:static}}@media(max-width:480px){main{padding:9px;gap:10px}.panel-body{padding:12px}.grid2{gap:8px}.brand h1{font-size:18px}.pill{display:none}}
+
+.advanced-note{border:1px solid #51406f;background:#211b31;color:#d8c9f8;padding:10px;border-radius:9px;font-size:11px;margin-top:9px}
+.preset-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stat{border:1px solid var(--line);background:#111620;border-radius:10px;padding:10px}
+.stat strong{display:block;font-size:16px;color:#d8b4fe}.stat span{font-size:10px;color:var(--muted)}
+
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="logo">✂</div><div><h1>Batch Crop Pro <span style="color:#c4b5fd">ULTRA</span></h1><p>Cắt ảnh hàng loạt · Watermark · Nén ảnh · ZIP</p></div></div>
+ <div class="header-right"><span class="pill">🔒 Xử lý ngay trên máy</span><span class="pill" id="headerCount">0 ảnh</span></div>
+</header>
+<main>
+<section class="panel">
+ <div class="panel-head"><h2>⚙️ Thiết lập xử lý</h2><button class="btn" id="resetBtn">Mặc định</button></div>
+ <div class="panel-body">
+  <div class="drop" id="dropZone"><div class="drop-icon">📂</div><strong>Kéo thả ảnh hoặc cả thư mục vào đây</strong><small>JPG · PNG · WEBP · GIF (khung đầu) · BMP · ảnh trong thư mục</small><div class="file-actions" style="justify-content:center"><button class="btn primary" id="chooseBtn">＋ Chọn ảnh</button><button class="btn" id="folderBtn">▣ Chọn thư mục</button></div></div>
+  <input id="fileInput" type="file" accept="image/*" multiple hidden><input id="folderInput" type="file" accept="image/*" webkitdirectory multiple hidden>
+  <div class="section-title">01 · Cắt ảnh</div>
+  <div class="advanced-note">✂️ Mẹo: chọn tỷ lệ và vị trí cắt trước khi xử lý. Bản này bổ sung nén theo dung lượng, watermark logo và cấu hình preset.</div>
+  <div class="grid2">
+   <div class="field"><label>Tỷ lệ khung hình</label><select id="ratio"><option value="4:3">4:3 — ngang</option><option value="1:1">1:1 — vuông</option><option value="16:9">16:9 — màn hình</option><option value="3:4">3:4 — dọc</option><option value="9:16">9:16 — Reels/Story</option><option value="2:3">2:3 — ảnh dọc</option><option value="3:2">3:2 — máy ảnh</option><option value="5:4">5:4</option><option value="free">Tự do / giữ nguyên</option><option value="custom">Tùy chỉnh</option></select></div>
+   <div class="field"><label>Vị trí cắt</label><select id="position"><option value="center">Chính giữa</option><option value="top">Phía trên</option><option value="bottom">Phía dưới</option><option value="left">Bên trái</option><option value="right">Bên phải</option><option value="smart">Ưu tiên vùng giữa (mặc định)</option></select></div>
+   <div class="field"><label>Tỷ lệ tùy chỉnh (rộng)</label><input id="customW" type="number" min="1" value="4"></div>
+   <div class="field"><label>Tỷ lệ tùy chỉnh (cao)</label><input id="customH" type="number" min="1" value="3"></div>
+   <div class="field"><label>Chiều rộng đầu ra (px)</label><input id="outW" type="number" min="1" max="12000" value="1080"></div>
+   <div class="field"><label>Chiều cao đầu ra (px)</label><input id="outH" type="number" min="1" max="12000" value="1080"></div>
+  </div>
+  <div class="check" style="margin-top:10px"><input type="checkbox" id="autoHeight" checked><label for="autoHeight">Tự tính chiều cao theo tỷ lệ đã chọn</label></div>
+  <div class="section-title">02 · Màu sắc & chất lượng</div>
+  <div class="grid2">
+   <div class="field"><label>Định dạng xuất</label><select id="format"><option value="image/jpeg">JPG — nhẹ, phổ biến</option><option value="image/webp">WEBP — dung lượng thấp</option><option value="image/png">PNG — giữ độ trong suốt</option></select></div>
+   <div class="field"><label>Chất lượng nén: <span id="qualityVal">88%</span></label><input id="quality" type="range" min="10" max="100" value="88"></div>
+   <div class="field"><label>Dung lượng tối đa mỗi ảnh (KB)</label><input id="targetKB" type="number" min="0" max="100000" value="0"><div class="hint">0 = chỉ dùng chất lượng đã chọn</div></div>
+   <div class="field"><label>Chế độ nén theo dung lượng</label><select id="targetMode"><option value="quality">Ưu tiên giữ kích thước</option><option value="resize">Được phép giảm kích thước nếu cần</option></select></div>
+   <div class="field"><label>Màu nền khi xuất JPG</label><input id="bgColor" type="color" value="#ffffff"></div>
+   <div class="field"><label>Độ sáng: <span id="brightnessVal">100%</span></label><input id="brightness" type="range" min="50" max="150" value="100"></div>
+   <div class="field"><label>Độ tương phản: <span id="contrastVal">100%</span></label><input id="contrast" type="range" min="50" max="160" value="100"></div>
+   <div class="field"><label>Độ bão hòa: <span id="saturationVal">100%</span></label><input id="saturation" type="range" min="0" max="200" value="100"></div>
+  </div>
+  <div class="section-title">03 · Watermark</div>
+  <div class="field"><label>Nội dung watermark</label><input id="watermark" type="text" placeholder="Ví dụ: Thanh Hà Herbal Wine"></div>
+  <div class="grid2" style="margin-top:9px">
+   <div class="field"><label>Logo PNG/JPG (tùy chọn)</label><input id="logoInput" type="file" accept="image/png,image/jpeg,image/webp"></div>
+   <div class="field"><label>Kích thước logo (% chiều rộng ảnh)</label><input id="logoSize" type="number" min="2" max="80" value="18"></div>
+   <div class="field"><label>Màu chữ</label><input id="wmColor" type="color" value="#ffffff"></div>
+   <div class="field"><label>Màu viền chữ</label><input id="wmStroke" type="color" value="#171717"></div>
+   <div class="field"><label>Độ trong suốt: <span id="opacityVal">45%</span></label><input id="opacity" type="range" min="0" max="100" value="45"></div>
+   <div class="field"><label>Kích thước chữ</label><input id="wmSize" type="number" min="8" max="300" value="32"></div>
+   <div class="field"><label>Vị trí watermark</label><select id="wmPosition"><option value="br">Góc dưới phải</option><option value="bl">Góc dưới trái</option><option value="tr">Góc trên phải</option><option value="tl">Góc trên trái</option><option value="center">Chính giữa</option><option value="tile">Lặp toàn ảnh</option></select></div>
+   <div class="field"><label>Kiểu chữ</label><select id="wmStyle"><option value="bold">Đậm</option><option value="normal">Thường</option><option value="italic">Nghiêng</option></select></div>
+  </div>
+  <div class="advanced-note">💡 Có thể kết hợp watermark chữ và logo. Nén theo KB sẽ tự thử nhiều mức chất lượng; chế độ giảm kích thước chỉ bật khi bạn cho phép.</div>
+  <div class="section-title">04 · Preset & kiểm tra ảnh</div>
+  <div class="grid2">
+   <div class="field"><label>Tên cấu hình</label><input id="presetName" value="Cấu hình của tôi" maxlength="60"></div>
+   <div class="field"><label>Cấu hình đã lưu</label><select id="presetList"><option value="">— Chọn cấu hình —</option></select></div>
+  </div>
+  <div class="preset-row">
+   <button class="btn" id="savePresetBtn">💾 Lưu cấu hình</button>
+   <button class="btn" id="loadPresetBtn">↻ Áp dụng cấu hình</button>
+   <button class="btn" id="deletePresetBtn">🗑 Xóa cấu hình</button>
+   <button class="btn" id="dupeBtn">🔎 Tìm ảnh trùng</button>
+  </div>
+  <div class="stat-grid">
+   <div class="stat"><strong id="statOriginal">0 B</strong><span>Dung lượng gốc</span></div>
+   <div class="stat"><strong id="statOutput">0 B</strong><span>Kết quả hiện có</span></div>
+   <div class="stat"><strong id="statSaved">0%</strong><span>Tiết kiệm</span></div>
+  </div>
+  <div class="section-title">05 · Lưu kết quả</div>
+  <div class="grid2">
+   <div class="field"><label>Tên hậu tố file</label><input id="suffix" value="_cropped" maxlength="40"></div>
+   <div class="field"><label>Đặt tên file</label><select id="naming"><option value="original">Tên gốc + hậu tố</option><option value="sequence">Đánh số 001, 002...</option></select></div>
+  </div>
+  <div class="actions">
+   <button class="btn primary wide" id="processBtn">✂️ Xử lý tất cả ảnh</button>
+   <button class="btn green" id="zipBtn" disabled>⬇ Tải ZIP kết quả</button>
+   <button class="btn" id="downloadBtn" disabled>⬇ Tải ảnh đang xem</button>
+   <button class="btn wide" id="clearBtn">Xóa danh sách ảnh</button>
+  </div>
+  <div class="progress-wrap"><div class="progress-meta"><span id="progressText">Sẵn sàng</span><strong id="progressPct">0%</strong></div><div class="progress-line"><div class="progress-fill" id="progressFill"></div></div></div>
+  <div class="log" id="log" aria-live="polite">[Sẵn sàng] Chọn ảnh hoặc kéo thả file/thư mục vào vùng phía trên.</div>
+ </div>
+</section>
+<div class="rightcol">
+ <section class="panel preview-panel">
+  <div class="panel-head"><h2>🖼️ Xem trước</h2><span class="pill" id="previewDims">Chưa có ảnh</span></div>
+  <div class="preview-stage" id="previewStage"><div class="empty"><div class="big">✦</div><strong>Chưa có ảnh để xem</strong><p>Chọn ảnh ở khung bên trái để bắt đầu</p></div></div>
+  <div class="preview-bottom"><span id="previewName">Không có ảnh được chọn</span><span id="previewInfo">Ảnh gốc sẽ được giữ nguyên</span></div>
+ </section>
+ <section class="panel">
+  <div class="panel-head"><h2>📚 Danh sách ảnh</h2><span id="queueCount" class="pill">0 ảnh</span></div>
+  <div class="queue" id="queue"><div class="empty" style="grid-column:1/-1;padding:20px">Ảnh đã thêm sẽ hiển thị tại đây.</div></div>
+ </section>
+</div>
+</main>
+<footer>Batch Crop Pro Offline · Không tải ảnh lên máy chủ · Mọi xử lý diễn ra trực tiếp trong trình duyệt của bạn.</footer>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+let files=[],selected=0,results=new Map(),busy=false,logoImage=null;
+const log=(msg,cls='')=>{const el=$('log'),line=document.createElement('div');if(cls)line.className=cls;line.textContent='['+new Date().toLocaleTimeString('vi-VN')+'] '+msg;el.appendChild(line);el.scrollTop=el.scrollHeight;};
+const fmt=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function isImage(f){return f&&(/^image\//i.test(f.type)||/\.(jpe?g|png|webp|gif|bmp|avif|tiff?)$/i.test(f.name||''))}
+function addFiles(incoming){let n=0;for(const f of incoming){if(!isImage(f))continue;const key=[f.name,f.size,f.lastModified].join('|');if(files.some(x=>x.key===key))continue;files.push({file:f,key,url:URL.createObjectURL(f),image:null,error:null});n++}if(n)log('Đã thêm '+n+' ảnh.');else if(incoming.length)log('Không có ảnh mới phù hợp hoặc ảnh đã có trong danh sách.','warn');renderQueue();if(files.length&&selected<0)selected=0;if(files.length)selectImage(Math.max(0,selected));}
+async function collectEntry(entry,out){if(entry.isFile){await new Promise(resolve=>entry.file(f=>{out.push(f);resolve()},()=>resolve()));}else if(entry.isDirectory){const reader=entry.createReader();let batch=[];do{batch=await new Promise(resolve=>reader.readEntries(resolve,()=>resolve([])));for(const e of batch)await collectEntry(e,out)}while(batch.length)}}
+async function handleDrop(e){e.preventDefault();$('dropZone').classList.remove('drag');const out=[];const items=[...(e.dataTransfer.items||[])];if(items.some(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry())){for(const item of items){const entry=item.webkitGetAsEntry?.();if(entry)await collectEntry(entry,out);else{const f=item.getAsFile?.();if(f)out.push(f)}}}else out.push(...e.dataTransfer.files);addFiles(out)}
+$('chooseBtn').onclick=()=>$('fileInput').click();$('folderBtn').onclick=()=>$('folderInput').click();
+$('fileInput').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};$('folderInput').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+const dz=$('dropZone');dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));dz.addEventListener('drop',handleDrop);
+document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{if(!dz.contains(e.target))handleDrop(e)});
+function loadImage(item){return new Promise((resolve,reject)=>{if(item.image)return resolve(item.image);const img=new Image();img.onload=()=>{item.image=img;resolve(img)};img.onerror=()=>reject(new Error('Không đọc được ảnh'));img.src=item.url})}
+function ratioValue(){const r=$('ratio').value;if(r==='free')return null;if(r==='custom')return Math.max(1,+$('customW').value||1)/Math.max(1,+$('customH').value||1);const p=r.split(':').map(Number);return p[0]/p[1]}
+function cropRect(iw,ih,ratio){if(!ratio)return{x:0,y:0,w:iw,h:ih};let w=iw,h=ih;if(iw/ih>ratio)w=ih*ratio;else h=iw/ratio;let x=(iw-w)/2,y=(ih-h)/2;const pos=$('position').value;if(pos==='top')y=0;if(pos==='bottom')y=ih-h;if(pos==='left')x=0;if(pos==='right')x=iw-w;return{x:Math.round(x),y:Math.round(y),w:Math.round(w),h:Math.round(h)}}
+function outputSize(img){let w=Math.max(1,Math.min(12000,Math.round(+$('outW').value||1080))),h=Math.max(1,Math.min(12000,Math.round(+$('outH').value||1080)));const r=ratioValue();if($('autoHeight').checked&&r)h=Math.max(1,Math.round(w/r));return{w,h}}
+function drawWatermark(ctx,w,h){
+ const text=$('watermark').value.trim(),size=Math.max(8,Math.min(300,+$('wmSize').value||32)),p=$('wmPosition').value,pad=size*.65;
+ ctx.save();ctx.globalAlpha=(+$('opacity').value||0)/100;
+ if(logoImage){
+   const lw=Math.max(12,w*Math.max(2,Math.min(80,+$('logoSize').value||18))/100);
+   const lh=lw*(logoImage.naturalHeight/logoImage.naturalWidth);
+   let x=w-lw-pad,y=h-lh-pad;
+   if(p==='bl'){x=pad;y=h-lh-pad}else if(p==='tr'){x=w-lw-pad;y=pad}else if(p==='tl'){x=pad;y=pad}else if(p==='center'){x=(w-lw)/2;y=(h-lh)/2}
+   if(p==='tile'){for(let yy=0;yy<h;yy+=lh*2)for(let xx=0;xx<w;xx+=lw*1.6)ctx.drawImage(logoImage,xx,yy,lw,lh)}
+   else ctx.drawImage(logoImage,x,y,lw,lh);
+ }
+ if(text){
+   ctx.font=($('wmStyle').value==='normal'?'normal':$('wmStyle').value)+' '+size+'px Arial, sans-serif';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=Math.max(1,size/12);ctx.strokeStyle=$('wmStroke').value;ctx.fillStyle=$('wmColor').value;
+   const draw=(x,y)=>{ctx.strokeText(text,x,y);ctx.fillText(text,x,y)},tw=ctx.measureText(text).width;
+   if(p==='tile'){ctx.textAlign='center';ctx.translate(w/2,h/2);ctx.rotate(-Math.PI/5);for(let y=-h;y<h*1.5;y+=size*3)for(let x=-w;x<w*1.5;x+=tw+size*3)draw(x-w/2,y-h/2)}
+   else{ctx.textAlign=p.endsWith('l')?'left':p.endsWith('r')?'right':'center';let x=w/2,y=h/2;if(p==='br'){x=w-pad;y=h-pad-size/2}else if(p==='bl'){x=pad;y=h-pad-size/2}else if(p==='tr'){x=w-pad;y=pad+size/2}else if(p==='tl'){x=pad;y=pad+size/2}draw(x,y)}
+ }
+ ctx.restore()
+}
+function renderToCanvas(img){const {w,h}=outputSize(img),rect=cropRect(img.naturalWidth||img.width,img.naturalHeight||img.height,ratioValue());const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{alpha:$('format').value==='image/png'});if($('format').value!=='image/png'){ctx.fillStyle=$('bgColor').value;ctx.fillRect(0,0,w,h)}ctx.filter=`brightness(${$('brightness').value}%) contrast(${$('contrast').value}%) saturate(${$('saturation').value}%)`;ctx.drawImage(img,rect.x,rect.y,rect.w,rect.h,0,0,w,h);ctx.filter='none';drawWatermark(ctx,w,h);return c}
+function showCanvas(c){const stage=$('previewStage');stage.innerHTML='';stage.appendChild(c);c.style.maxWidth='100%';c.style.maxHeight='70vh';$('previewDims').textContent=c.width+' × '+c.height+' px'}
+async function selectImage(index){if(!files.length)return;selected=Math.max(0,Math.min(index,files.length-1));const item=files[selected];renderQueue();$('previewName').textContent=item.file.name;try{const img=await loadImage(item);const c=renderToCanvas(img);showCanvas(c);$('previewInfo').textContent=`Gốc ${img.naturalWidth}×${img.naturalHeight} · ${fmt(item.file.size)}`;$('downloadBtn').disabled=!results.has(item.key)}catch(e){$('previewStage').innerHTML='<div class="empty">Không thể mở ảnh này.</div>';log(item.file.name+': '+e.message,'err')}}
+function renderQueue(){ $('headerCount').textContent=files.length+' ảnh';$('queueCount').textContent=files.length+' ảnh';const q=$('queue');q.innerHTML='';if(!files.length){q.innerHTML='<div class="empty" style="grid-column:1/-1;padding:20px">Ảnh đã thêm sẽ hiển thị tại đây.</div>';return}files.forEach((it,i)=>{const card=document.createElement('div');card.className='thumb'+(i===selected?' active':'');const im=document.createElement('img');im.src=it.url;im.alt='';const info=document.createElement('div');info.className='thumb-info';const nm=document.createElement('div');nm.className='thumb-name';nm.title=it.file.name;nm.textContent=it.file.name;const meta=document.createElement('div');meta.className='thumb-meta';meta.textContent=results.has(it.key)?'✓ Đã xử lý · '+fmt(results.get(it.key).blob.size):fmt(it.file.size);info.append(nm,meta);const rm=document.createElement('button');rm.className='remove';rm.textContent='×';rm.title='Xóa ảnh';rm.onclick=e=>{e.stopPropagation();URL.revokeObjectURL(it.url);files.splice(i,1);results.delete(it.key);if(selected>=files.length)selected=files.length-1;renderQueue();if(files.length)selectImage(Math.max(0,selected));else{ $('previewStage').innerHTML='<div class="empty"><div class="big">✦</div><strong>Chưa có ảnh để xem</strong></div>'; $('previewName').textContent='Không có ảnh được chọn';$('previewDims').textContent='Chưa có ảnh'}};card.append(im,info,rm);card.onclick=()=>selectImage(i);q.append(card)})}
+function updatePreview(){['quality','opacity','brightness','contrast','saturation'].forEach(id=>{const val=$(id).value;const target={quality:'qualityVal',opacity:'opacityVal',brightness:'brightnessVal',contrast:'contrastVal',saturation:'saturationVal'}[id];$(target).textContent=val+'%' });if(files.length)selectImage(selected);updateStats()}
+['ratio','position','customW','customH','outW','outH','autoHeight','format','bgColor','brightness','contrast','saturation','watermark','wmColor','wmStroke','opacity','wmSize','wmPosition','wmStyle'].forEach(id=>$(id).addEventListener('input',updatePreview));
+$('quality').addEventListener('input',updatePreview);
+$('autoHeight').onchange=()=>{if($('autoHeight').checked&&ratioValue())$('outH').disabled=true;else $('outH').disabled=false;updatePreview()};
+$('ratio').addEventListener('change',()=>{ $('outH').disabled=$('autoHeight').checked&&!!ratioValue();updatePreview()});
+$('resetBtn').onclick=()=>{ $('ratio').value='4:3';$('position').value='center';$('customW').value=4;$('customH').value=3;$('outW').value=1080;$('outH').value=1080;$('autoHeight').checked=true;$('outH').disabled=true;$('format').value='image/jpeg';$('quality').value=88;$('targetKB').value=0;$('targetMode').value='quality';$('logoSize').value=18;$('logoInput').value='';logoImage=null;$('bgColor').value='#ffffff';$('brightness').value=100;$('contrast').value=100;$('saturation').value=100;$('watermark').value='';$('wmColor').value='#ffffff';$('wmStroke').value='#171717';$('opacity').value=45;$('wmSize').value=32;$('wmPosition').value='br';$('wmStyle').value='bold';$('suffix').value='_cropped';$('naming').value='original';updatePreview();log('Đã khôi phục thiết lập mặc định.')};
+function outputName(item,i){const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[$('format').value]||'jpg';let base=$('naming').value==='sequence'?String(i+1).padStart(3,'0'):item.file.name.replace(/\.[^.]+$/,'')+($('suffix').value||'_cropped');return base.replace(/[\\/:*?"<>|]/g,'_')+'.'+ext}
+function canvasBlob(canvas,type,q){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Trình duyệt không xuất được định dạng '+type)),type,q))}
+async function makeTargetBlob(canvas,type,quality,targetKB,allowResize){
+ let work=canvas,limit=Math.max(0,+targetKB||0)*1024;
+ let blob=await canvasBlob(work,type,quality);
+ if(!limit||blob.size<=limit)return blob;
+ let lo=.1,hi=quality,best=null;
+ for(let i=0;i<7;i++){const q=(lo+hi)/2,b=await canvasBlob(work,type,q);if(b.size<=limit){best=b;lo=q}else hi=q}
+ if(best)return best;
+ if(allowResize){
+   let scale=.9;
+   for(let i=0;i<12;i++,scale*=.88){
+     const c=document.createElement('canvas');c.width=Math.max(1,Math.round(canvas.width*scale));c.height=Math.max(1,Math.round(canvas.height*scale));
+     c.getContext('2d').drawImage(canvas,0,0,c.width,c.height);
+     const b=await canvasBlob(c,type,.72);if(b.size<=limit)return b;
+   }
+ }
+ return blob;
+}
+function updateStats(){
+ const orig=files.reduce((s,x)=>s+x.file.size,0),out=[...results.values()].reduce((s,x)=>s+x.blob.size,0);
+ $('statOriginal').textContent=fmt(orig);$('statOutput').textContent=fmt(out);
+ $('statSaved').textContent=orig?Math.round((1-out/orig)*100)+'%':'0%';
+}
+function presetFields(){return ['ratio','position','customW','customH','outW','outH','autoHeight','format','quality','targetKB','targetMode','bgColor','brightness','contrast','saturation','watermark','logoSize','wmColor','wmStroke','opacity','wmSize','wmPosition','wmStyle','suffix','naming']}
+function refreshPresets(){const sel=$('presetList'),old=sel.value;sel.innerHTML='<option value="">— Chọn cấu hình —</option>';let data={};try{data=JSON.parse(localStorage.getItem('batchCropProPresets')||'{}')}catch{}Object.keys(data).sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;sel.append(o)});if(data[old])sel.value=old}
+function savePreset(){const name=$('presetName').value.trim();if(!name){log('Hãy nhập tên cấu hình.','warn');return}let data={};try{data=JSON.parse(localStorage.getItem('batchCropProPresets')||'{}')}catch{}const values={};presetFields().forEach(id=>{const el=$(id);values[id]=el.type==='checkbox'?el.checked:el.value});data[name]=values;try{localStorage.setItem('batchCropProPresets',JSON.stringify(data));refreshPresets();$('presetList').value=name;log('Đã lưu cấu hình: '+name)}catch(e){log('Không thể lưu cấu hình trong trình duyệt này.','err')}}
+function loadPreset(){const name=$('presetList').value;if(!name)return;let data={};try{data=JSON.parse(localStorage.getItem('batchCropProPresets')||'{}')}catch{}const values=data[name];if(!values)return;presetFields().forEach(id=>{if(values[id]!==undefined){const el=$(id);if(el.type==='checkbox')el.checked=!!values[id];else el.value=values[id]}});$('outH').disabled=$('autoHeight').checked&&!!ratioValue();updatePreview();log('Đã áp dụng cấu hình: '+name)}
+async function findDuplicates(){
+ if(files.length<2){log('Cần ít nhất 2 ảnh để kiểm tra trùng.','warn');return}
+ $('dupeBtn').disabled=true;const seen=new Map(),dupes=[];let done=0;
+ for(const it of files){try{const buf=await it.file.arrayBuffer();let hash;if(window.crypto&&crypto.subtle){const dig=await crypto.subtle.digest('SHA-256',buf);hash=[...new Uint8Array(dig)].map(x=>x.toString(16).padStart(2,'0')).join('')}else{const bytes=new Uint8Array(buf);let h=2166136261;for(const b of bytes)h=Math.imul(h^b,16777619);hash=(h>>>0).toString(16)+'-'+bytes.length}
+ if(seen.has(hash))dupes.push({name:it.file.name,first:seen.get(hash)});else seen.set(hash,it.file.name)}catch(e){log('Không thể kiểm tra '+it.file.name,'warn')}done++;$('progressText').textContent='Đang kiểm tra trùng ảnh '+done+'/'+files.length}
+ if(dupes.length){log('Tìm thấy '+dupes.length+' ảnh trùng nội dung:','warn');dupes.forEach(d=>log(d.name+' trùng với '+d.first,'warn'))}else log('Không tìm thấy ảnh trùng nội dung.');$('progressText').textContent='Kiểm tra trùng hoàn tất';$('dupeBtn').disabled=false;
+}
+
+async function processAll(){if(busy)return;if(!files.length){log('Bạn chưa chọn ảnh.','warn');return}busy=true;$('processBtn').disabled=true;$('zipBtn').disabled=true;$('downloadBtn').disabled=true;results.clear();let ok=0;for(let i=0;i<files.length;i++){const item=files[i];$('progressText').textContent='Đang xử lý '+(i+1)+'/'+files.length+': '+item.file.name;try{const img=await loadImage(item),canvas=renderToCanvas(img),blob=await makeTargetBlob(canvas,$('format').value,+$('quality').value/100,+$('targetKB').value,$('targetMode').value==='resize');results.set(item.key,{blob,name:outputName(item,i),width:canvas.width,height:canvas.height});ok++;log('Đã xử lý: '+item.file.name+' → '+fmt(blob.size)+(+$('targetKB').value>0?' (mục tiêu '+$('targetKB').value+' KB)':''));updateStats();}catch(e){log('Lỗi '+item.file.name+': '+e.message,'err')}const pct=Math.round((i+1)/files.length*100);$('progressFill').style.width=pct+'%';$('progressPct').textContent=pct+'%';renderQueue();updateStats()}busy=false;$('processBtn').disabled=false;$('zipBtn').disabled=results.size===0;$('downloadBtn').disabled=!files[selected]||!results.has(files[selected].key);$('progressText').textContent='Hoàn thành '+ok+'/'+files.length+' ảnh';log('Hoàn thành. Có '+ok+' ảnh sẵn sàng tải.');if(files.length)selectImage(selected)}
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+$('processBtn').onclick=processAll;
+$('logoInput').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f){logoImage=null;updatePreview();return}const url=URL.createObjectURL(f),img=new Image();img.onload=()=>{logoImage=img;updatePreview();log('Đã tải logo watermark: '+f.name);URL.revokeObjectURL(url)};img.onerror=()=>{logoImage=null;log('Không đọc được logo.','err')};img.src=url});
+$('savePresetBtn').onclick=savePreset;$('loadPresetBtn').onclick=loadPreset;
+$('deletePresetBtn').onclick=()=>{const name=$('presetList').value;if(!name)return;let data={};try{data=JSON.parse(localStorage.getItem('batchCropProPresets')||'{}')}catch{}delete data[name];localStorage.setItem('batchCropProPresets',JSON.stringify(data));refreshPresets();log('Đã xóa cấu hình: '+name)};
+$('dupeBtn').onclick=findDuplicates;
+refreshPresets();updateStats();
+$('downloadBtn').onclick=()=>{const it=files[selected],r=it&&results.get(it.key);if(r)downloadBlob(r.blob,r.name)};
+/* ZIP không nén ngoài: tạo ZIP chuẩn dạng STORE, không cần thư viện hay Internet. */
+const crcTable=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(data){let c=0xffffffff;for(let i=0;i<data.length;i++)c=crcTable[(c^data[i])&255]^(c>>>8);return(c^0xffffffff)>>>0}
+function u16(v){return[v&255,(v>>>8)&255]}function u32(v){return[v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255]}
+function dosDate(){const d=new Date();return{time:(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),date:((Math.max(1980,d.getFullYear())-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate()}}
+async function makeZip(entries){const enc=new TextEncoder(),local=[],central=[];let offset=0;const dt=dosDate();for(const ent of entries){const name=enc.encode(ent.name),data=new Uint8Array(await ent.blob.arrayBuffer()),crc=crc32(data);const lh=new Uint8Array([...u32(0x04034b50),...u16(20),...u16(0x0800),...u16(0),...u16(dt.time),...u16(dt.date),...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0),...name]);local.push(lh,data);const ch=new Uint8Array([...u32(0x02014b50),...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(dt.time),...u16(dt.date),...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset),...name]);central.push(ch);offset+=lh.length+data.length}const centralSize=central.reduce((s,a)=>s+a.length,0),end=new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(entries.length),...u16(entries.length),...u32(centralSize),...u32(offset),...u16(0)]);return new Blob([...local,...central,end],{type:'application/zip'})}
+$('zipBtn').onclick=async()=>{const entries=[...results.values()];if(!entries.length)return;$('zipBtn').disabled=true;$('progressText').textContent='Đang đóng gói ZIP…';try{const zip=await makeZip(entries);downloadBlob(zip,'batch-crop-results.zip');log('Đã tạo ZIP: '+entries.length+' ảnh · '+fmt(zip.size));$('progressText').textContent='ZIP sẵn sàng · '+entries.length+' ảnh'}catch(e){log('Lỗi tạo ZIP: '+e.message,'err')}$('zipBtn').disabled=false};
+$('clearBtn').onclick=()=>{if(busy)return;files.forEach(it=>URL.revokeObjectURL(it.url));files=[];results.clear();selected=0;renderQueue();updateStats();$('previewStage').innerHTML='<div class="empty"><div class="big">✦</div><strong>Chưa có ảnh để xem</strong><p>Chọn ảnh ở khung bên trái để bắt đầu</p></div>';$('previewName').textContent='Không có ảnh được chọn';$('previewInfo').textContent='Ảnh gốc sẽ được giữ nguyên';$('previewDims').textContent='Chưa có ảnh';$('zipBtn').disabled=true;$('downloadBtn').disabled=true;$('progressFill').style.width='0%';$('progressPct').textContent='0%';$('progressText').textContent='Sẵn sàng';log('Đã xóa danh sách ảnh.')};
+$('autoHeight').dispatchEvent(new Event('change'));updatePreview();
+})();
+</script>
+</body>
+</html>
