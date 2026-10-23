@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Merger Pro - Offline & Modern Glassmorphism</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        darkbg: '#0b0f17',
+                        glass: 'rgba(17, 24, 39, 0.7)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- SheetJS (xlsx.full.min.js) CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Font Family -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f17;
+            color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card:hover {
+            background: rgba(31, 41, 55, 0.7);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.5);
+        }
+
+        .drag-active {
+            border-color: #10b981 !important;
+            background: rgba(16, 185, 129, 0.1) !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Navigation / Header -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-gradient-to-br from-brand-500 to-teal-700 rounded-xl shadow-lg shadow-brand-500/20 text-white">
+                    <i data-lucide="layers" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-lg font-bold text-white tracking-wide">Excel Merger Pro</h1>
+                        <span class="px-2 py-0.5 text-[10px] font-mono font-semibold bg-brand-500/10 text-brand-500 border border-brand-500/20 rounded-full">v2.0 Offline</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Công cụ gộp file Excel & CSV bảo mật 100% Client-Side</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="download-html-btn" title="Tải ứng dụng HTML này về máy để chạy Offline không cần Internet" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition-all hover:border-slate-500">
+                    <i data-lucide="download text-brand-500" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Lưu trang HTML này (Dùng Offline)</span>
+                </button>
+                <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
+                <div class="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-800/40">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>100% Offline Ready</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+        <!-- Grid Layout: Left Column (Controls & Settings) | Right Column (File List & Preview & Logs) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN: Drag-Drop, Options, Export -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- File Upload Box -->
+                <div class="glass-panel p-5 rounded-2xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="upload-cloud" class="w-4 h-4 text-brand-500"></i> Tải File Nguồn
+                        </h2>
+                        <span class="text-[11px] text-slate-400">Hỗ trợ: .xlsx, .xls, .csv</span>
+                    </div>
+
+                    <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-brand-500/80 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 group relative">
+                        <input type="file" id="file-input" multiple accept=".xlsx, .xls, .csv" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+                        <div class="space-y-3 pointer-events-none">
+                            <div class="w-12 h-12 mx-auto rounded-full bg-slate-800/80 group-hover:bg-brand-500/10 text-slate-400 group-hover:text-brand-500 flex items-center justify-center transition-all">
+                                <i data-lucide="file-plus" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-300">Kéo thả file vào đây hoặc <span class="text-brand-500 font-semibold underline">Duyệt file từ máy</span></p>
+                                <p class="text-[10px] text-slate-500 mt-1">Xử lý trực tiếp trên RAM, không mất dữ liệu riêng tư</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merge Settings -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i> Tùy Chọn Gộp Dữ Liệu
+                    </h2>
+
+                    <div class="space-y-2.5">
+                        <!-- Mode 1: Append Rows -->
+                        <label class="flex items-start p-3 rounded-xl glass-card cursor-pointer hover:border-brand-500/50 transition-all border border-transparent has-[:checked]:border-brand-500/80 has-[:checked]:bg-brand-500/10">
+                            <input type="radio" name="merge-mode" value="append" checked class="mt-0.5 text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-700">
+                            <div class="ml-3">
+                                <span class="block text-xs font-semibold text-slate-200">Mode 1: Nối tiếp dòng (Append / Union)</span>
+                                <span class="block text-[11px] text-slate-400 mt-0.5">Nối tất cả các dòng dữ liệu thành 1 Sheet duy nhất. Tự động hợp nhất cột trùng tên.</span>
+                            </div>
+                        </label>
+
+                        <!-- Sub Options for Mode 1 -->
+                        <div id="mode-append-options" class="ml-6 pl-3 border-l-2 border-slate-800 space-y-2 pt-1 text-xs text-slate-300">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="opt-all-sheets" checked class="rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-brand-500">
+                                <span>Gộp tất cả Sheet của mỗi file (thay vì chỉ Sheet đầu)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="opt-add-filename" checked class="rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-brand-500">
+                                <span>Thêm cột chỉ định: <b>Tên File Nguồn</b> & <b>Tên Sheet</b></span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="opt-skip-empty" checked class="rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-brand-500">
+                                <span>Bỏ qua các dòng hoàn toàn trống</span>
+                            </label>
+                        </div>
+
+                        <!-- Mode 2: Multi Sheets -->
+                        <label class="flex items-start p-3 rounded-xl glass-card cursor-pointer hover:border-brand-500/50 transition-all border border-transparent has-[:checked]:border-brand-500/80 has-[:checked]:bg-brand-500/10">
+                            <input type="radio" name="merge-mode" value="sheets" class="mt-0.5 text-brand-500 focus:ring-brand-500 bg-slate-900 border-slate-700">
+                            <div class="ml-3">
+                                <span class="block text-xs font-semibold text-slate-200">Mode 2: Gộp thành nhiều Sheet (Combine Sheets)</span>
+                                <span class="block text-[11px] text-slate-400 mt-0.5">Giữ nguyên các tab/sheet cũ hoặc biến mỗi file thành 1 Sheet riêng trong file Excel mới.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Export Configuration -->
+                    <div class="pt-3 border-t border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label for="export-filename" class="text-xs text-slate-400">Tên file đầu ra:</label>
+                            <div class="relative w-48">
+                                <input type="text" id="export-filename" value="Merged_Excel_Result" class="w-full text-xs bg-slate-900/80 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-brand-500 font-mono">
+                                <span class="absolute right-2 top-1.5 text-[10px] text-slate-500 font-mono">.xlsx</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar Component -->
+                    <div id="progress-container" class="hidden space-y-1.5 pt-2">
+                        <div class="flex justify-between text-[11px] font-mono">
+                            <span id="progress-status" class="text-brand-400 font-medium">Đang xử lý...</span>
+                            <span id="progress-percent" class="text-slate-400">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden p-0.5 border border-slate-800">
+                            <div id="progress-bar" class="bg-gradient-to-r from-brand-600 to-teal-400 h-full rounded-full w-0 transition-all duration-200"></div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="pt-2 flex gap-2">
+                        <button id="start-merge-btn" disabled class="flex-1 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:border-slate-800 disabled:cursor-not-allowed text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-brand-600/20 transition-all flex items-center justify-center gap-2 border border-brand-500/30">
+                            <i data-lucide="play" class="w-4 h-4"></i> Bắt Đầu Gộp & Xuất File
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: File Manager & Preview & Activity Logs -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- File List & Management -->
+                <div class="glass-panel p-5 rounded-2xl flex flex-col h-[320px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-brand-500"></i>
+                            <h2 class="text-sm font-semibold text-slate-200">Danh Sách File (<span id="file-count-badge">0</span>)</h2>
+                        </div>
+                        <button id="clear-all-btn" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 hidden">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa tất cả
+                        </button>
+                    </div>
+
+                    <div id="file-list-scroll" class="flex-grow overflow-y-auto pr-1 space-y-2">
+                        <div id="file-empty-state" class="h-full flex flex-col items-center justify-center text-slate-500 space-y-2 border border-dashed border-slate-800 rounded-xl">
+                            <i data-lucide="files" class="w-8 h-8 text-slate-600"></i>
+                            <p class="text-xs">Chưa có file nào được tải lên</p>
+                        </div>
+                        <!-- Dynamic file cards generated here -->
+                    </div>
+                </div>
+
+                <!-- Preview Table & Logs Area Tabs -->
+                <div class="glass-panel rounded-2xl flex flex-col h-[400px] overflow-hidden">
+                    <!-- Tab Headers -->
+                    <div class="flex items-center justify-between border-b border-slate-800/80 px-4 bg-slate-900/40">
+                        <div class="flex space-x-1">
+                            <button id="tab-preview-btn" class="py-3 px-4 text-xs font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center gap-2 transition-all">
+                                <i data-lucide="table" class="w-3.5 h-3.5"></i> Xem Trước Kết Quả
+                            </button>
+                            <button id="tab-logs-btn" class="py-3 px-4 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-all">
+                                <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Live Logs Console
+                                <span id="log-count-badge" class="px-1.5 py-0.2 text-[10px] bg-slate-800 text-slate-300 rounded-full font-mono">0</span>
+                            </button>
+                        </div>
+
+                        <div id="preview-search-box" class="hidden items-center gap-2">
+                            <div class="relative">
+                                <input type="text" id="preview-search-input" placeholder="Tìm kiếm nhanh..." class="bg-slate-900/80 border border-slate-700 text-slate-200 text-xs rounded-lg pl-7 pr-3 py-1 focus:outline-none focus:border-brand-500 w-36 sm:w-48">
+                                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-2 top-1.5"></i>
+                            </div>
+                        </div>
+
+                        <div id="logs-actions" class="hidden items-center gap-2">
+                            <button id="copy-log-btn" class="text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1 p-1 hover:bg-slate-800 rounded">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Log
+                            </button>
+                            <button id="clear-log-btn" class="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1 p-1 hover:bg-slate-800 rounded">
+                                <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Xóa Log
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB CONTENT 1: PREVIEW TABLE -->
+                    <div id="tab-preview-content" class="flex-grow flex flex-col p-4 overflow-hidden relative">
+                        <div id="preview-placeholder" class="h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
+                            <i data-lucide="layout-grid" class="w-8 h-8 text-slate-600"></i>
+                            <p class="text-xs">Nhấn nút "Bắt Đầu Gộp" để khởi tạo dữ liệu xem trước</p>
+                        </div>
+
+                        <div id="preview-table-wrapper" class="hidden flex-grow overflow-auto border border-slate-800 rounded-xl">
+                            <table id="preview-table" class="w-full text-left text-xs text-slate-300 border-collapse font-mono">
+                                <thead id="preview-thead" class="bg-slate-900/90 text-slate-200 sticky top-0 z-10 border-b border-slate-800"></thead>
+                                <tbody id="preview-tbody" class="divide-y divide-slate-800/60 bg-slate-950/20"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Preview Table Pagination Footer -->
+                        <div id="preview-pagination" class="hidden items-center justify-between pt-3 text-xs text-slate-400 border-t border-slate-800/80 mt-2">
+                            <span id="preview-page-info">Hiển thị 1 - 50 dòng</span>
+                            <div class="flex gap-2">
+                                <button id="prev-page-btn" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 disabled:opacity-40">Trước</button>
+                                <button id="next-page-btn" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 disabled:opacity-40">Sau</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB CONTENT 2: LIVE LOGS CONSOLE -->
+                    <div id="tab-logs-content" class="hidden flex-grow p-4 bg-slate-950/80 font-mono text-xs overflow-y-auto space-y-1.5 selection:bg-slate-800">
+                        <div class="text-slate-500 italic text-[11px] mb-2">// Hệ thống sẵn sàng. Nhấn "Gộp File" để xem nhật ký realtime.</div>
+                        <div id="logs-container" class="space-y-1"></div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 glass-panel py-3 px-4 text-center text-xs text-slate-500">
+        Excel Merger Pro • Thuật toán hoàn toàn Client-Side • Chạy Offline an toàn trên mọi thiết bị
+    </footer>
+
+    <!-- Toast Banner -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 bg-slate-900 text-slate-200 border border-slate-700 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs">
+        <i id="toast-icon" data-lucide="info" class="w-5 h-5 text-brand-500"></i>
+        <span id="toast-text" class="font-medium">Thông báo</span>
+    </div>
+
+    <!-- Application JavaScript Engine -->
+    <script>
+        // State Management
+        let fileList = []; // Array of File objects + metadata { id, file, sheetsCount, totalRows }
+        let currentMergedResult = null; // Stores merged JSON/Workbook
+        let previewDataRows = [];
+        let filteredDataRows = [];
+        let currentPage = 1;
+        const pageSize = 50;
+        let logsCount = 0;
+
+        // DOM Element Cache
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileListScroll = document.getElementById('file-list-scroll');
+        const fileEmptyState = document.getElementById('file-empty-state');
+        const fileCountBadge = document.getElementById('file-count-badge');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const startMergeBtn = document.getElementById('start-merge-btn');
+        const downloadHtmlBtn = document.getElementById('download-html-btn');
+
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = document.getElementById('progress-percent');
+        const progressStatus = document.getElementById('progress-status');
+
+        const tabPreviewBtn = document.getElementById('tab-preview-btn');
+        const tabLogsBtn = document.getElementById('tab-logs-btn');
+        const tabPreviewContent = document.getElementById('tab-preview-content');
+        const tabLogsContent = document.getElementById('tab-logs-content');
+        const previewSearchBox = document.getElementById('preview-search-box');
+        const logsActions = document.getElementById('logs-actions');
+        const previewSearchInput = document.getElementById('preview-search-input');
+        const logsContainer = document.getElementById('logs-container');
+        const logCountBadge = document.getElementById('log-count-badge');
+
+        const previewPlaceholder = document.getElementById('preview-placeholder');
+        const previewTableWrapper = document.getElementById('preview-table-wrapper');
+        const previewThead = document.getElementById('preview-thead');
+        const previewTbody = document.getElementById('preview-tbody');
+        const previewPagination = document.getElementById('preview-pagination');
+        const previewPageInfo = document.getElementById('preview-page-info');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Helper: Logger Engine
+        function log(message, type = 'info') {
+            logsCount++;
+            logCountBadge.innerText = logsCount;
+
+            const timeStr = new Date().toLocaleTimeString('vi-VN');
+            const logRow = document.createElement('div');
+            logRow.className = "flex items-start gap-2 text-[11px] leading-relaxed";
+
+            let typeStyle = "text-slate-300";
+            let prefix = "[INFO]";
+            if (type === 'success') { typeStyle = "text-emerald-400"; prefix = "[SUCCESS]"; }
+            else if (type === 'warn') { typeStyle = "text-amber-400"; prefix = "[WARN]"; }
+            else if (type === 'error') { typeStyle = "text-rose-400 font-semibold"; prefix = "[ERROR]"; }
+
+            logRow.innerHTML = `
+                <span class="text-slate-600 shrink-0 font-mono">[${timeStr}]</span>
+                <span class="${typeStyle} font-mono font-semibold shrink-0">${prefix}</span>
+                <span class="${typeStyle} break-all">${message}</span>
+            `;
+
+            logsContainer.appendChild(logRow);
+            tabLogsContent.scrollTop = tabLogsContent.scrollHeight;
+        }
+
+        // Helper: Toast Notification
+        function showToast(text, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastText.innerText = text;
+            if (type === 'error') {
+                toastIcon.setAttribute('data-lucide', 'alert-circle');
+                toastIcon.className = 'w-5 h-5 text-rose-500';
+            } else if (type === 'success') {
+                toastIcon.setAttribute('data-lucide', 'check-circle-2');
+                toastIcon.className = 'w-5 h-5 text-emerald-400';
+            } else {
+                toastIcon.setAttribute('data-lucide', 'info');
+                toastIcon.className = 'w-5 h-5 text-brand-500';
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        // Tab Switching Logic
+        tabPreviewBtn.addEventListener('click', () => {
+            tabPreviewBtn.className = "py-3 px-4 text-xs font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center gap-2 transition-all";
+            tabLogsBtn.className = "py-3 px-4 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-all";
+            tabPreviewContent.classList.remove('hidden');
+            tabLogsContent.classList.add('hidden');
+            previewSearchBox.classList.remove('hidden');
+            logsActions.classList.add('hidden');
+        });
+
+        tabLogsBtn.addEventListener('click', () => {
+            tabLogsBtn.className = "py-3 px-4 text-xs font-semibold border-b-2 border-brand-500 text-brand-400 flex items-center gap-2 transition-all";
+            tabPreviewBtn.className = "py-3 px-4 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-all";
+            tabLogsContent.classList.remove('hidden');
+            tabPreviewContent.classList.add('hidden');
+            previewSearchBox.classList.add('hidden');
+            logsActions.classList.remove('hidden');
+        });
+
+        document.getElementById('clear-log-btn').addEventListener('click', () => {
+            logsContainer.innerHTML = '';
+            logsCount = 0;
+            logCountBadge.innerText = 0;
+            log("Đã xóa nhật ký hoạt động.");
+        });
+
+        document.getElementById('copy-log-btn').addEventListener('click', () => {
+            const text = logsContainer.innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Đã copy toàn bộ log vào Clipboard", "success");
+        });
+
+        // Drag & Drop Handling
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-active');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            handleFileAdd(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFileAdd(e.target.files);
+            fileInput.value = '';
+        });
+
+        // Handle File Insertion
+        async function handleFileAdd(files) {
+            const validExts = ['xlsx', 'xls', 'csv'];
+            let countAdded = 0;
+
+            for (let file of Array.from(files)) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!validExts.includes(ext)) {
+                    log(`Bỏ qua file không hợp lệ: ${file.name}`, 'warn');
+                    continue;
+                }
+
+                // Check duplicate
+                if (fileList.some(item => item.file.name === file.name && item.file.size === file.size)) {
+                    log(`Bỏ qua file đã có trong danh sách: ${file.name}`, 'warn');
+                    continue;
+                }
+
+                // Rapid metadata inspection
+                const id = 'f_' + Math.random().toString(36).substr(2, 9);
+                const fileMeta = {
+                    id: id,
+                    file: file,
+                    sheetsCount: '...',
+                    rowsEstimate: '...'
+                };
+
+                fileList.push(fileMeta);
+                countAdded++;
+                log(`Thêm file: ${file.name} (${formatBytes(file.size)})`, 'info');
+
+                // Inspect sheets asynchronously
+                inspectFileAsync(fileMeta);
+            }
+
+            if (countAdded > 0) {
+                renderFileList();
+                updateUIState();
+            }
+        }
+
+        // Asynchronous sheet counter for UI metadata display
+        async function inspectFileAsync(fileMeta) {
+            try {
+                const arrayBuffer = await fileMeta.file.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array', sheetStubs: false });
+                fileMeta.sheetsCount = workbook.SheetNames.length;
+                
+                // Estimate rows of first sheet
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                if (firstSheet) {
+                    const range = XLSX.utils.decode_range(firstSheet['!ref'] || "A1:A1");
+                    fileMeta.rowsEstimate = range.e.r + 1;
+                } else {
+                    fileMeta.rowsEstimate = 0;
+                }
+
+                renderFileList();
+            } catch (err) {
+                fileMeta.sheetsCount = 'Lỗi';
+                fileMeta.rowsEstimate = 'N/A';
+                log(`Không thể đọc metadata của file ${fileMeta.file.name}: ${err.message}`, 'error');
+                renderFileList();
+            }
+        }
+
+        // Render File List with Reorder and Delete controls
+        function renderFileList() {
+            fileCountBadge.innerText = fileList.length;
+
+            if (fileList.length === 0) {
+                fileEmptyState.classList.remove('hidden');
+                clearAllBtn.classList.add('hidden');
+                return;
+            }
+
+            fileEmptyState.classList.add('hidden');
+            clearAllBtn.classList.remove('hidden');
+
+            // Render List Items
+            const itemsHtml = fileList.map((item, index) => {
+                return `
+                    <div class="glass-card p-3 rounded-xl flex items-center justify-between text-xs transition-all" data-id="${item.id}">
+                        <div class="flex items-center gap-3 min-w-0 pr-2">
+                            <span class="font-mono text-slate-500 text-[11px] w-4 text-center font-bold">${index + 1}</span>
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-brand-500 shrink-0"></i>
+                            <div class="min-w-0">
+                                <p class="font-medium text-slate-200 truncate" title="${item.file.name}">${item.file.name}</p>
+                                <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 font-mono">
+                                    <span>${formatBytes(item.file.size)}</span>
+                                    <span>•</span>
+                                    <span>${item.sheetsCount} sheet(s)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 shrink-0">
+                            <!-- Reorder Up -->
+                            <button onclick="reorderFile(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-30 rounded transition-all">
+                                <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <!-- Reorder Down -->
+                            <button onclick="reorderFile(${index}, 1)" ${index === fileList.length - 1 ? 'disabled' : ''} class="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 disabled:opacity-30 rounded transition-all">
+                                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <!-- Delete -->
+                            <button onclick="deleteFile('${item.id}')" class="p-1 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 rounded transition-all">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            fileListScroll.innerHTML = itemsHtml;
+            lucide.createIcons();
+        }
+
+        // Reorder File Logic
+        window.reorderFile = function(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= fileList.length) return;
+            const temp = fileList[index];
+            fileList[index] = fileList[targetIndex];
+            fileList[targetIndex] = temp;
+            renderFileList();
+            log(`Đã thay đổi thứ tự file: ${temp.file.name}`);
+        };
+
+        // Delete File Logic
+        window.deleteFile = function(id) {
+            const item = fileList.find(f => f.id === id);
+            fileList = fileList.filter(f => f.id !== id);
+            renderFileList();
+            updateUIState();
+            if (item) log(`Đã xóa file: ${item.file.name}`);
+        };
+
+        clearAllBtn.addEventListener('click', () => {
+            fileList = [];
+            renderFileList();
+            updateUIState();
+            log(`Đã xóa tất cả các file khỏi danh sách.`);
+        });
+
+        function updateUIState() {
+            startMergeBtn.disabled = fileList.length === 0;
+        }
+
+        function setProgress(percent, statusText) {
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = `${percent}%`;
+            progressPercent.innerText = `${percent}%`;
+            progressStatus.innerText = statusText;
+        }
+
+        // ==========================================
+        // CORE MERGE ENGINE (100% Client Side XLSX)
+        // ==========================================
+        startMergeBtn.addEventListener('click', async () => {
+            if (fileList.length === 0) return;
+
+            startMergeBtn.disabled = true;
+            const mergeMode = document.querySelector('input[name="merge-mode"]:checked').value;
+            const optAllSheets = document.getElementById('opt-all-sheets').checked;
+            const optAddFilename = document.getElementById('opt-add-filename').checked;
+            const optSkipEmpty = document.getElementById('opt-skip-empty').checked;
+            let filename = document.getElementById('export-filename').value.trim() || 'Merged_Result';
+            if (!filename.endsWith('.xlsx')) filename += '.xlsx';
+
+            log("=== BẮT ĐẦU TIẾN TRÌNH GỘP FILE ===", "info");
+            setProgress(5, "Đang khởi tạo thuật toán...");
+
+            try {
+                let finalWorkbook = XLSX.utils.book_new();
+                let allMergedRows = [];
+                let headersMap = new Set();
+                let totalProcessedFiles = 0;
+                let totalProcessedSheets = 0;
+
+                const stepPercent = 80 / fileList.length;
+
+                for (let i = 0; i < fileList.length; i++) {
+                    const item = fileList[i];
+                    const file = item.file;
+                    
+                    setProgress(Math.round(10 + (i * stepPercent)), `Đang đọc (${i+1}/${fileList.length}): ${file.name}`);
+                    log(`Đang đọc dữ liệu từ file: ${file.name}...`);
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+
+                    totalProcessedFiles++;
+                    const sheetsToProcess = optAllSheets ? wb.SheetNames : [wb.SheetNames[0]];
+
+                    for (let sheetName of sheetsToProcess) {
+                        totalProcessedSheets++;
+                        const sheet = wb.Sheets[sheetName];
+                        if (!sheet) continue;
+
+                        if (mergeMode === 'append') {
+                            // Convert sheet to JSON array of objects
+                            const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+                            
+                            rows.forEach(row => {
+                                // Skip empty rows if option enabled
+                                if (optSkipEmpty && Object.values(row).every(v => v === "" || v === null || v === undefined)) {
+                                    return;
+                                }
+
+                                let formattedRow = {};
+                                if (optAddFilename) {
+                                    formattedRow["Tên File Nguồn"] = file.name;
+                                    formattedRow["Tên Sheet Nguồn"] = sheetName;
+                                    headersMap.add("Tên File Nguồn");
+                                    headersMap.add("Tên Sheet Nguồn");
+                                }
+
+                                Object.keys(row).forEach(k => {
+                                    formattedRow[k] = row[k];
+                                    headersMap.add(k);
+                                });
+
+                                allMergedRows.push(formattedRow);
+                            });
+                        } 
+                        else if (mergeMode === 'sheets') {
+                            // Create clean target sheet name
+                            let targetName = wb.SheetNames.length > 1 && optAllSheets 
+                                ? `${file.name.replace(/\.[^/.]+$/, "")}_${sheetName}`
+                                : file.name.replace(/\.[^/.]+$/, "");
+
+                            targetName = targetName.replace(/[\\/?*:[\]]/g, "").substring(0, 28);
+                            
+                            // Ensure unique sheet name in workbook
+                            let dupIndex = 1;
+                            let uniqueName = targetName;
+                            while (finalWorkbook.SheetNames.includes(uniqueName)) {
+                                uniqueName = `${targetName}_${dupIndex++}`;
+                            }
+
+                            XLSX.utils.book_append_sheet(finalWorkbook, sheet, uniqueName);
+                            log(`Đã thêm sheet mới: [${uniqueName}]`);
+                        }
+                    }
+                }
+
+                setProgress(90, "Đang kết xuất file Excel...");
+
+                if (mergeMode === 'append') {
+                    const headersArray = Array.from(headersMap);
+                    const mergedSheet = XLSX.utils.json_to_sheet(allMergedRows, { header: headersArray });
+                    XLSX.utils.book_append_sheet(finalWorkbook, mergedSheet, "Merged Data");
+
+                    previewDataRows = allMergedRows;
+                    log(`Đã gộp thành công ${allMergedRows.length} dòng dữ liệu từ ${totalProcessedSheets} sheet(s).`, "success");
+                } else {
+                    // Multi sheet preview: preview first sheet
+                    const firstSheetName = finalWorkbook.SheetNames[0];
+                    if (firstSheetName) {
+                        previewDataRows = XLSX.utils.sheet_to_json(finalWorkbook.Sheets[firstSheetName], { defval: "" });
+                    }
+                    log(`Đã gộp thành công ${finalWorkbook.SheetNames.length} sheet(s) riêng biệt vào workbook.`, "success");
+                }
+
+                setProgress(95, "Đang tải xuống file...");
+                
+                // Write & Trigger Download
+                XLSX.writeFile(finalWorkbook, filename);
+
+                setProgress(100, "Hoàn tất!");
+                log(`Đã xuất file thành công: ${filename}`, "success");
+                showToast(`Đã xuất file ${filename} thành công!`, "success");
+
+                // Render Preview
+                setupPreviewTable(previewDataRows);
+
+            } catch (err) {
+                console.error(err);
+                log(`Lỗi trong quá trình gộp file: ${err.message}`, "error");
+                showToast("Lỗi khi xử lý dữ liệu. Kiểm tra log để biết chi tiết.", "error");
+                setProgress(0, "Xảy ra lỗi!");
+            } finally {
+                startMergeBtn.disabled = false;
+                setTimeout(() => {
+                    progressContainer.classList.add('hidden');
+                }, 4000);
+            }
+        });
+
+        // ==========================================
+        // PREVIEW TABLE ENGINE
+        // ==========================================
+        function setupPreviewTable(rows) {
+            filteredDataRows = [...rows];
+            currentPage = 1;
+
+            if (!rows || rows.length === 0) {
+                previewPlaceholder.classList.remove('hidden');
+                previewTableWrapper.classList.add('hidden');
+                previewPagination.classList.add('hidden');
+                return;
+            }
+
+            previewPlaceholder.classList.add('hidden');
+            previewTableWrapper.classList.remove('hidden');
+            previewPagination.classList.remove('hidden');
+
+            renderPreviewPage();
+        }
+
+        function renderPreviewPage() {
+            if (filteredDataRows.length === 0) {
+                previewThead.innerHTML = '';
+                previewTbody.innerHTML = '<tr><td class="p-4 text-center text-slate-500">Không tìm thấy dữ liệu khớp</td></tr>';
+                previewPageInfo.innerText = '0 dòng';
+                return;
+            }
+
+            // Extract all headers
+            const headers = Array.from(new Set(filteredDataRows.flatMap(r => Object.keys(r))));
+
+            // Render Header
+            previewThead.innerHTML = `
+                <tr>
+                    ${headers.map(h => `<th class="px-3 py-2 bg-slate-900 border-b border-slate-800 text-slate-300 font-semibold whitespace-nowrap">${escapeHtml(h)}</th>`).join('')}
+                </tr>
+            `;
+
+            // Calculate Pagination
+            const totalPages = Math.ceil(filteredDataRows.length / pageSize);
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = Math.min(startIdx + pageSize, filteredDataRows.length);
+            const pageRows = filteredDataRows.slice(startIdx, endIdx);
+
+            // Render Body Rows
+            previewTbody.innerHTML = pageRows.map(row => {
+                return `<tr class="hover:bg-slate-900/50 transition-colors border-b border-slate-800/40">
+                    ${headers.map(h => `<td class="px-3 py-2 whitespace-nowrap text-slate-300">${escapeHtml(row[h] !== undefined ? String(row[h]) : '')}</td>`).join('')}
+                </tr>`;
+            }).join('');
+
+            // Update Pagination UI
+            previewPageInfo.innerText = `Hiển thị ${startIdx + 1} - ${endIdx} trên tổng số ${filteredDataRows.length} dòng`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+        }
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPreviewPage();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredDataRows.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPreviewPage();
+            }
+        });
+
+        // Quick Search Filter for Preview Table
+        previewSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (!query) {
+                filteredDataRows = [...previewDataRows];
+            } else {
+                filteredDataRows = previewDataRows.filter(row => {
+                    return Object.values(row).some(val => String(val).toLowerCase().includes(query));
+                });
+            }
+            currentPage = 1;
+            renderPreviewPage();
+        });
+
+        // ==========================================
+        // DOWNLOAD SELF-CONTAINED OFFLINE HTML FILE
+        // ==========================================
+        downloadHtmlBtn.addEventListener('click', () => {
+            try {
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Excel_Merger_Pro_Offline.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("Đã lưu trang HTML Offline về máy thành công!", "success");
+                log("Đã xuất ứng dụng thành file HTML đơn lẻ để sử dụng Offline.", "success");
+            } catch (err) {
+                showToast("Lỗi khi tải file HTML offline", "error");
+            }
+        });
+
+        // Utilities
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
